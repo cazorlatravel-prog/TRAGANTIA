@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Tragantia Escape City - Inicio</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="Juego de escape urbano con realidad aumentada en Cazorla">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tragantia">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="imagenes/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --st-red: #e40914;
+            --st-red-glow: rgba(228, 9, 20, 0.5);
+            --st-red-dark: #8b0000;
+            --st-black: #0a0a0a;
+            --st-dark: #141414;
+            --st-surface: #1a1a1a;
+            --st-amber: #d4a574;
+            --st-yellow: #f5c842;
+            --st-green: #39ff14;
+            --st-white: #f0e6d3;
+            --st-gray: #777;
+            --st-gray-dark: #333;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%; height: 100%;
+            background: var(--st-black);
+            color: var(--st-white);
+            font-family: 'Orbitron', 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Particulas flotantes del Upside Down */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(1px 1px at 10% 20%, rgba(228, 9, 20, 0.3) 50%, transparent 50%),
+                radial-gradient(1px 1px at 30% 65%, rgba(228, 9, 20, 0.2) 50%, transparent 50%),
+                radial-gradient(1.5px 1.5px at 55% 15%, rgba(212, 165, 116, 0.25) 50%, transparent 50%),
+                radial-gradient(1px 1px at 70% 80%, rgba(228, 9, 20, 0.2) 50%, transparent 50%),
+                radial-gradient(1.5px 1.5px at 85% 40%, rgba(212, 165, 116, 0.2) 50%, transparent 50%),
+                radial-gradient(1px 1px at 45% 90%, rgba(228, 9, 20, 0.15) 50%, transparent 50%),
+                radial-gradient(1px 1px at 20% 50%, rgba(245, 200, 66, 0.15) 50%, transparent 50%);
+            animation: flotar-particulas 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes flotar-particulas {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-30px); }
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+        }
+
+        /* Alerta superior */
+        .alert {
+            font-family: 'VT323', monospace;
+            color: var(--st-red);
+            font-size: 0.85em;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            animation: flicker-alerta 3s ease-in-out infinite;
+        }
+        @keyframes flicker-alerta {
+            0%, 100% { opacity: 1; }
+            41% { opacity: 1; }
+            42% { opacity: 0.3; }
+            43% { opacity: 1; }
+            80% { opacity: 1; }
+            81% { opacity: 0.5; }
+            82% { opacity: 1; }
+        }
+
+        /* Banner */
+        .banner-img {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            border-radius: 4px;
+            border: 2px solid rgba(228, 9, 20, 0.4);
+            box-shadow: 0 0 30px rgba(228, 9, 20, 0.2), 0 8px 32px rgba(0,0,0,0.6);
+            margin-bottom: 16px;
+        }
+
+        /* Boton audio */
+        .btn-audio {
+            background: transparent;
+            color: var(--st-amber);
+            border: 1.5px solid var(--st-amber);
+            padding: 14px 16px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            margin: 12px 0 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.75em;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .btn-audio:hover, .btn-audio:active {
+            background: rgba(212, 165, 116, 0.1);
+            box-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
+        }
+
+        /* Titulo estilo Stranger Things */
+        h1 {
+            font-family: 'Creepster', cursive;
+            font-size: clamp(2.2em, 10vw, 3em);
+            color: var(--st-red);
+            letter-spacing: 4px;
+            line-height: 1.1;
+            margin: 8px 0 16px;
+            text-shadow:
+                0 0 10px var(--st-red-glow),
+                0 0 30px var(--st-red-glow),
+                0 0 60px rgba(228, 9, 20, 0.3),
+                0 0 100px rgba(228, 9, 20, 0.15);
+            animation: flicker-titulo 5s ease-in-out infinite;
+        }
+        h1 span {
+            display: block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.35em;
+            color: var(--st-amber);
+            letter-spacing: 12px;
+            margin-top: 4px;
+            text-shadow: none;
+        }
+        @keyframes flicker-titulo {
+            0%, 100% { opacity: 1; text-shadow: 0 0 10px var(--st-red-glow), 0 0 30px var(--st-red-glow), 0 0 60px rgba(228, 9, 20, 0.3); }
+            92% { opacity: 1; }
+            93% { opacity: 0.7; }
+            94% { opacity: 1; }
+            96% { opacity: 1; }
+            97% { opacity: 0.8; }
+            98% { opacity: 1; }
+        }
+
+        /* Aviso portales */
+        .portales-aviso {
+            font-family: 'VT323', monospace;
+            font-size: 1.1em;
+            color: var(--st-red);
+            padding: 12px;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            border-top: 1px solid rgba(228, 9, 20, 0.3);
+            border-bottom: 1px solid rgba(228, 9, 20, 0.3);
+            animation: flicker-alerta 4s ease-in-out infinite;
+        }
+
+        /* Caja de lore */
+        .lore-box {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--st-gray-dark);
+            border-left: 3px solid var(--st-red);
+            border-radius: 6px;
+            padding: 18px 20px;
+            text-align: left;
+            font-family: 'Special Elite', cursive;
+            font-size: 0.95em;
+            line-height: 1.7;
+            color: #bbb;
+            margin-bottom: 24px;
+        }
+        .lore-box strong { color: var(--st-red); }
+
+        /* Caja de acceso */
+        .acceso-box {
+            background: var(--st-surface);
+            border: 1px solid var(--st-gray-dark);
+            border-radius: 10px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+        }
+        .acceso-box p { font-size: 0.8em; letter-spacing: 1px; }
+
+        /* Input de codigo */
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            background: var(--st-black);
+            border: 2px solid var(--st-gray-dark);
+            border-radius: 8px;
+            color: var(--st-white);
+            font-family: 'VT323', monospace;
+            font-size: 1.5em;
+            text-align: center;
+            letter-spacing: 6px;
+            margin: 16px 0;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--st-red);
+            box-shadow: 0 0 20px rgba(228, 9, 20, 0.2);
+        }
+        input[type="text"]::placeholder {
+            color: #444;
+            letter-spacing: 8px;
+        }
+
+        /* Botones */
+        .btn-validar {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--st-red);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.9em;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(228, 9, 20, 0.3);
+        }
+        .btn-validar:hover, .btn-validar:active {
+            background: #c50812;
+            box-shadow: 0 4px 25px rgba(228, 9, 20, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-reanudar {
+            background: #1a6b1a;
+            box-shadow: 0 4px 15px rgba(57, 255, 20, 0.15);
+        }
+        .btn-reanudar:hover, .btn-reanudar:active {
+            background: #158015;
+            box-shadow: 0 4px 25px rgba(57, 255, 20, 0.25);
+        }
+
+        .btn-progreso {
+            display: block;
+            width: 100%;
+            background: transparent;
+            border: 1.5px solid var(--st-amber);
+            border-radius: 8px;
+            color: var(--st-amber);
+            margin-top: 12px;
+            padding: 14px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .btn-progreso:hover { background: rgba(212, 165, 116, 0.1); }
+
+        .btn-borrar {
+            display: block;
+            width: 100%;
+            background: transparent;
+            color: #555;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65em;
+            text-decoration: none;
+            border: none;
+            margin-top: 16px;
+            padding: 8px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+        .btn-borrar:hover { color: var(--st-red); }
+
+        #error-msg {
+            font-family: 'VT323', monospace;
+            color: var(--st-red);
+            font-size: 1.1em;
+            margin-top: 16px;
+            display: none;
+            animation: flicker-alerta 2s ease-in-out infinite;
+        }
+
+        /* Link comprar */
+        .link-comprar {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.7em;
+            letter-spacing: 0.5px;
+            transition: color 0.3s;
+        }
+        .link-comprar:hover { color: var(--st-amber); }
+
+        /* Mision en curso */
+        .mision-en-curso {
+            font-family: 'VT323', monospace;
+            color: var(--st-green);
+            font-size: 1em;
+            letter-spacing: 3px;
+            margin-bottom: 16px;
+        }
+
+        /* === Modal de Progreso === */
+        .modal-progreso {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 200;
+            overflow-y: auto;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-progreso.activo { display: block; }
+
+        .progreso-contenido {
+            max-width: 440px;
+            margin: 0 auto;
+            padding-top: 24px;
+        }
+        .progreso-titulo {
+            font-family: 'Creepster', cursive;
+            font-size: 1.6em;
+            color: var(--st-red);
+            text-align: center;
+            margin-bottom: 6px;
+            text-shadow: 0 0 15px var(--st-red-glow);
+        }
+        .progreso-subtitulo {
+            font-family: 'VT323', monospace;
+            color: var(--st-amber);
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 1em;
+            letter-spacing: 2px;
+        }
+
+        .portal-item {
+            background: var(--st-surface);
+            border: 1.5px solid var(--st-gray-dark);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .portal-item:hover { border-color: var(--st-red); background: rgba(228, 9, 20, 0.05); }
+        .portal-item.completado { border-color: var(--st-green); background: rgba(57, 255, 20, 0.03); }
+        .portal-item.activo { border-color: var(--st-amber); }
+        .portal-item.bloqueado { opacity: 0.35; cursor: not-allowed; }
+        .portal-item.bloqueado:hover { border-color: var(--st-gray-dark); background: var(--st-surface); }
+
+        .portal-numero {
+            font-family: 'Creepster', cursive;
+            font-size: 1.4em;
+            color: var(--st-gray-dark);
+            width: 32px;
+            text-align: center;
+        }
+        .portal-item.completado .portal-numero { color: var(--st-green); }
+        .portal-item.activo .portal-numero { color: var(--st-amber); }
+
+        .portal-info { flex: 1; }
+        .portal-nombre {
+            font-family: 'Orbitron', sans-serif;
+            color: #ccc;
+            font-size: 0.7em;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .portal-stats {
+            font-family: 'VT323', monospace;
+            color: #555;
+            font-size: 0.9em;
+        }
+        .portal-stats.verde { color: var(--st-green); }
+
+        .portal-icono {
+            font-family: 'VT323', monospace;
+            font-size: 1.2em;
+            color: var(--st-gray-dark);
+        }
+        .portal-item.completado .portal-icono { color: var(--st-green); }
+        .portal-item.activo .portal-icono { color: var(--st-amber); }
+
+        .btn-cerrar-modal {
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: transparent;
+            border: 1px solid var(--st-gray-dark);
+            border-radius: 8px;
+            color: var(--st-gray);
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        .btn-cerrar-modal:hover { border-color: var(--st-red); color: var(--st-red); }
+
+        .total-puntos {
+            text-align: center;
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1.5px solid var(--st-green);
+            background: rgba(57, 255, 20, 0.03);
+        }
+        .total-puntos-valor {
+            font-family: 'VT323', monospace;
+            font-size: 2.5em;
+            color: var(--st-green);
+        }
+        .total-puntos-label {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--st-gray);
+            font-size: 0.6em;
+            letter-spacing: 3px;
+            margin-top: 4px;
+        }
+
+        /* === Boton Instalar App === */
+        .btn-instalar {
+            display: none;
+            width: 100%;
+            padding: 16px;
+            margin: 20px 0;
+            background: var(--st-surface);
+            border: 2px solid var(--st-green);
+            border-radius: 8px;
+            color: var(--st-green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8em;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-instalar:hover {
+            background: rgba(57, 255, 20, 0.05);
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.25);
+        }
+        .btn-instalar-icono { font-size: 1.2em; margin-right: 8px; }
+
+        .instalado-msg {
+            display: none;
+            padding: 14px;
+            margin: 20px 0;
+            background: rgba(57, 255, 20, 0.05);
+            border: 1.5px solid var(--st-green);
+            border-radius: 8px;
+            color: var(--st-green);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        /* === Modal de Instrucciones === */
+        .modal-instrucciones {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 300;
+            overflow-y: auto;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-instrucciones.activo { display: block; }
+
+        .instrucciones-contenido {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+        .instrucciones-titulo {
+            font-family: 'Creepster', cursive;
+            font-size: 1.8em;
+            color: var(--st-red);
+            text-align: center;
+            margin-bottom: 4px;
+            text-shadow: 0 0 20px var(--st-red-glow);
+        }
+        .instrucciones-subtitulo {
+            font-family: 'VT323', monospace;
+            color: var(--st-amber);
+            text-align: center;
+            margin-bottom: 28px;
+            font-size: 1em;
+            letter-spacing: 2px;
+        }
+
+        .instrucciones-seccion {
+            background: var(--st-surface);
+            border: 1px solid var(--st-gray-dark);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 14px;
+        }
+        .instrucciones-seccion h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--st-red);
+            margin: 0 0 14px 0;
+            font-size: 0.8em;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .instrucciones-seccion p {
+            font-family: 'Special Elite', cursive;
+            color: #bbb;
+            margin: 0 0 10px 0;
+            line-height: 1.7;
+            font-size: 0.95em;
+        }
+        .instrucciones-seccion strong { color: var(--st-white); }
+        .instrucciones-seccion ul {
+            color: #aaa;
+            margin: 10px 0;
+            padding-left: 20px;
+            font-family: 'Special Elite', cursive;
+            font-size: 0.9em;
+        }
+        .instrucciones-seccion li { margin-bottom: 10px; line-height: 1.5; }
+        .instrucciones-seccion li strong { color: var(--st-amber); }
+        .icono-seccion { font-size: 1.3em; }
+
+        .puntuacion-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .puntuacion-tabla td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--st-gray-dark);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            color: #bbb;
+        }
+        .puntuacion-tabla td:first-child { color: var(--st-green); }
+        .puntuacion-tabla td:last-child { text-align: right; color: var(--st-amber); }
+
+        .btn-comenzar {
+            width: 100%;
+            padding: 18px;
+            margin-top: 24px;
+            background: var(--st-red);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9em;
+            font-weight: 700;
+            letter-spacing: 3px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 20px rgba(228, 9, 20, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-comenzar:hover, .btn-comenzar:active {
+            background: #c50812;
+            box-shadow: 0 4px 30px rgba(228, 9, 20, 0.6);
+            transform: translateY(-1px);
+        }
+
+        /* Separador decorativo */
+        .separador {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--st-red), transparent);
+            margin: 0 auto 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="alert">Portal Abierto</p>
+        <img src="imagenes/tragantia.jpg" alt="La Tragantia" class="banner-img">
+
+        <audio id="introAudio" src="imagenes/audio1.mp3" preload="auto"></audio>
+        <button class="btn-audio" onclick="playIntro()">Escuchar Informe de la Mision</button>
+
+        <h1>La Tragantia<span>Escape City</span></h1>
+
+        <div class="portales-aviso">7 PORTALES DETECTADOS</div>
+
+        <div class="lore-box">
+            <p>Se han abierto <strong>7 portales</strong> entre el mundo donde habita la Tragantia y Cazorla. Tu mision es encontrar y sellar todas las brechas antes de que sea tarde.</p>
+        </div>
+
+        <!-- Boton Instalar App -->
+        <button class="btn-instalar" id="btnInstalar">
+            <span class="btn-instalar-icono">+</span> INSTALAR APP
+        </button>
+        <div class="instalado-msg" id="msgInstalado">App instalada correctamente</div>
+
+        <div class="acceso-box" id="seccion-codigo">
+            <p style="margin-bottom: 4px; color: var(--st-amber);"><strong>CODIGO DE ACTIVACION</strong></p>
+            <input type="text" id="codigo-input" placeholder="- - - -" autocomplete="off">
+            <button class="btn-validar" onclick="validarAcceso()">Iniciar Mision</button>
+            <p style="margin-top: 20px;"><a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="link-comprar">No tienes codigo? Consiguelo aqui</a></p>
+            <p id="error-msg">CODIGO INVALIDO</p>
+        </div>
+
+        <div class="acceso-box" id="seccion-reanudar" style="display:none;">
+            <p class="mision-en-curso">MISION EN CURSO</p>
+            <button class="btn-validar btn-reanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
+            <button class="btn-progreso" onclick="abrirProgreso()">Ver Progreso de Portales</button>
+            <button class="btn-borrar" onclick="borrarProgreso()">Borrar datos y empezar de cero</button>
+        </div>
+    </div>
+
+    <!-- Modal de Progreso -->
+    <div class="modal-progreso" id="modalProgreso">
+        <div class="progreso-contenido">
+            <h2 class="progreso-titulo">Tu Progreso</h2>
+            <p class="progreso-subtitulo">7 Portales por sellar</p>
+
+            <div id="listaPortales"></div>
+
+            <div class="total-puntos">
+                <div class="total-puntos-valor" id="totalPuntosValor">0</div>
+                <div class="total-puntos-label">PUNTOS TOTALES</div>
+            </div>
+
+            <button class="btn-cerrar-modal" onclick="cerrarProgreso()">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Modal de Instrucciones -->
+    <div class="modal-instrucciones" id="modalInstrucciones">
+        <div class="instrucciones-contenido">
+            <h2 class="instrucciones-titulo">Como Jugar</h2>
+            <p class="instrucciones-subtitulo">Lee atentamente antes de comenzar</p>
+
+            <div class="instrucciones-seccion">
+                <h3><span class="icono-seccion">&#x25C9;</span> TU MISION</h3>
+                <p>Se han abierto <strong>7 portales</strong> entre el mundo de la Tragantia y Cazorla. Debes encontrar cada portal, llegar hasta el y superar sus pruebas para sellarlo.</p>
+            </div>
+
+            <div class="instrucciones-seccion">
+                <h3><span class="icono-seccion">&#x25CE;</span> LOS 7 PORTALES</h3>
+                <ul>
+                    <li><strong>Portal 1:</strong> Plaza de la Corredera</li>
+                    <li><strong>Portal 2:</strong> Convento de la Merced</li>
+                    <li><strong>Portal 3:</strong> Balcon de Zabaleta</li>
+                    <li><strong>Portal 4:</strong> Puerta de los Deseos</li>
+                    <li><strong>Portal 5:</strong> Plaza de Santa Maria</li>
+                    <li><strong>Portal 6:</strong> Molino Harinero</li>
+                    <li><strong>Portal 7:</strong> Puerta Norte del Castillo</li>
+                </ul>
+            </div>
+
+            <div class="instrucciones-seccion">
+                <h3><span class="icono-seccion">&#x2606;</span> PUNTUACION</h3>
+                <p>La puntuacion premia principalmente <strong>acertar las respuestas</strong>:</p>
+                <table class="puntuacion-tabla">
+                    <tr><td>Respuesta correcta</td><td>+100 pts</td></tr>
+                    <tr><td>Respuesta incorrecta</td><td>-25 pts</td></tr>
+                    <tr><td>Bonus por rapidez</td><td>+1 a +20 pts</td></tr>
+                    <tr><td>Completar portal</td><td>+50 pts</td></tr>
+                </table>
+                <p style="font-size: 0.8em; color: #666;">El bonus de rapidez es menor comparado con acertar. Piensa bien tus respuestas.</p>
+            </div>
+
+            <div class="instrucciones-seccion">
+                <h3><span class="icono-seccion">&#x25A0;</span> CONSEJOS</h3>
+                <ul>
+                    <li>Activa el <strong>GPS</strong> de tu movil</li>
+                    <li>Usa <strong>auriculares</strong> para mejor experiencia</li>
+                    <li>Observa bien el entorno para encontrar las respuestas</li>
+                    <li>Puedes pausar y continuar en cualquier momento</li>
+                </ul>
+            </div>
+
+            <button class="btn-comenzar" onclick="cerrarInstrucciones()">COMENZAR AVENTURA</button>
+        </div>
+    </div>
+
+    <script src="codigos.js"></script>
+    <script>
+        // Configuracion de portales
+        const PORTALES = [
+            { id: 1, nombre: "Plaza de la Corredera", archivo: "plaza-corredera.html", key: "portal1" },
+            { id: 2, nombre: "Convento de la Merced", archivo: "convento-merced.html", key: "portal2" },
+            { id: 3, nombre: "Balcon de Zabaleta", archivo: "balcon-zabaleta.html", key: "portal3" },
+            { id: 4, nombre: "Puerta de los Deseos", archivo: "puerta-deseos.html", key: "portal4" },
+            { id: 5, nombre: "Plaza de Santa Maria", archivo: "plaza-santa-maria.html", key: "portal5" },
+            { id: 6, nombre: "Molino Harinero", archivo: "rio-tragantia.html", key: "portal6" },
+            { id: 7, nombre: "Puerta Norte Castillo", archivo: "guarida-tragantia.html", key: "portal7" }
+        ];
+
+        window.onload = function() {
+            const progreso = localStorage.getItem('tragantia_progreso');
+            if (progreso) {
+                document.getElementById('seccion-codigo').style.display = 'none';
+                document.getElementById('seccion-reanudar').style.display = 'block';
+            }
+        };
+
+        function playIntro() {
+            const audio = document.getElementById('introAudio');
+            if (audio.paused) { audio.play(); document.querySelector('.btn-audio').innerText = "Pausar Informe"; }
+            else { audio.pause(); document.querySelector('.btn-audio').innerText = "Reanudar Informe"; }
+        }
+
+        function validarAcceso() {
+            const input = document.getElementById('codigo-input').value.trim().toLowerCase();
+            const codigosLower = CODIGOS_VALIDOS.map(c => c.toLowerCase());
+            if (typeof CODIGOS_VALIDOS !== 'undefined' && codigosLower.includes(input)) {
+                localStorage.setItem('tragantia_auth', 'true');
+                abrirInstrucciones();
+            } else { document.getElementById('error-msg').style.display = 'block'; }
+        }
+
+        function abrirInstrucciones() {
+            document.getElementById('modalInstrucciones').classList.add('activo');
+        }
+
+        function cerrarInstrucciones() {
+            document.getElementById('modalInstrucciones').classList.remove('activo');
+            window.location.href = 'plaza-corredera.html';
+        }
+
+        function reanudarMision() {
+            const p = localStorage.getItem('tragantia_progreso');
+            if (p) window.location.href = p;
+        }
+
+        function borrarProgreso() {
+            if (confirm("Se borraran todos los datos. Deberas meter el codigo de nuevo.")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+
+        function abrirProgreso() {
+            renderizarProgreso();
+            document.getElementById('modalProgreso').classList.add('activo');
+        }
+
+        function cerrarProgreso() {
+            document.getElementById('modalProgreso').classList.remove('activo');
+        }
+
+        function obtenerSiguientePortal() {
+            for (let portal of PORTALES) {
+                const completado = localStorage.getItem('tragantia_' + portal.key + '_completado') === 'true';
+                if (!completado) return portal;
+            }
+            return PORTALES[PORTALES.length - 1];
+        }
+
+        function renderizarProgreso() {
+            const lista = document.getElementById('listaPortales');
+            lista.innerHTML = '';
+            let totalPuntos = 0;
+            const siguientePortal = obtenerSiguientePortal();
+
+            PORTALES.forEach(portal => {
+                const completado = localStorage.getItem('tragantia_' + portal.key + '_completado') === 'true';
+                const puntos = parseInt(localStorage.getItem('tragantia_' + portal.key + '_puntos') || '0');
+                const tiempo = localStorage.getItem('tragantia_' + portal.key + '_tiempo') || '--:--';
+                totalPuntos += puntos;
+
+                const esActivo = portal.id === siguientePortal.id && !completado;
+                const esBloqueado = portal.id > siguientePortal.id && !completado;
+
+                let clase = 'portal-item';
+                if (completado) clase += ' completado';
+                else if (esActivo) clase += ' activo';
+                else if (esBloqueado) clase += ' bloqueado';
+
+                const item = document.createElement('div');
+                item.className = clase;
+                item.innerHTML = `
+                    <div class="portal-numero">${portal.id}</div>
+                    <div class="portal-info">
+                        <div class="portal-nombre">${portal.nombre}</div>
+                        <div class="portal-stats ${completado ? 'verde' : ''}">${completado ? puntos + ' pts · ' + tiempo : (esActivo ? 'Siguiente portal' : 'Bloqueado')}</div>
+                    </div>
+                    <div class="portal-icono">${completado ? '&#x2713;' : (esActivo ? '&#x25C9;' : '&#x25CB;')}</div>
+                `;
+
+                if (completado || esActivo) {
+                    item.addEventListener('click', () => {
+                        window.location.href = portal.archivo;
+                    });
+                }
+
+                lista.appendChild(item);
+            });
+
+            document.getElementById('totalPuntosValor').textContent = totalPuntos;
+        }
+
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                console.log('SW registrado');
+            }).catch(err => console.log('SW error:', err));
+        }
+
+        // Sistema de instalacion PWA
+        let deferredPrompt;
+        const btnInstalar = document.getElementById('btnInstalar');
+        const msgInstalado = document.getElementById('msgInstalado');
+
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            msgInstalado.style.display = 'block';
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            btnInstalar.style.display = 'block';
+        });
+
+        btnInstalar.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                btnInstalar.style.display = 'none';
+                msgInstalado.style.display = 'block';
+            }
+            deferredPrompt = null;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            btnInstalar.style.display = 'none';
+            msgInstalado.style.display = 'block';
+            deferredPrompt = null;
+        });
+    </script>
+</body>
+</html>
