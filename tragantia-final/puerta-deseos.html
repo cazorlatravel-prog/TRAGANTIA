@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brecha #4 · Puerta de los Deseos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --st-red: #e40914;
+            --st-red-glow: rgba(228, 9, 20, 0.5);
+            --st-black: #0a0a0a;
+            --st-dark: #141414;
+            --st-surface: #1a1a1a;
+            --st-amber: #d4a574;
+            --st-green: #39ff14;
+            --st-white: #f0e6d3;
+            --st-gray: #777;
+            --st-gray-dark: #333;
+            --accent: var(--st-red);
+            --accent-glow: var(--st-red-glow);
+            --rojo-sangre: #8b0000;
+            --rojo-portal: var(--st-red);
+            --verde-radar: var(--st-green);
+            --negro-vacio: var(--st-black);
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: var(--st-black); font-family: 'Orbitron', sans-serif; touch-action: manipulation; -webkit-font-smoothing: antialiased; }
+
+        /* === PANTALLA RADAR === */
+        .pantalla-radar {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+            background: radial-gradient(ellipse at 50% 40%, rgba(228,9,20,0.06) 0%, transparent 60%), var(--st-black);
+            padding: 20px; color: white;
+        }
+        .header-mision { text-align: center; margin-bottom: 16px; }
+        .numero-brecha {
+            font-family: 'VT323', monospace; font-size: 0.85em; color: var(--accent);
+            letter-spacing: 5px; text-transform: uppercase;
+            animation: st-flicker 4s ease-in-out infinite;
+        }
+        .nombre-objetivo {
+            font-family: 'Creepster', cursive; font-size: clamp(1.5em, 7vw, 2.2em); color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow), 0 0 30px var(--accent-glow), 0 0 60px rgba(228,9,20,0.2);
+            letter-spacing: 3px; margin: 8px 0;
+        }
+        .subtitulo-objetivo { font-family: 'VT323', monospace; font-size: 0.85em; color: var(--st-amber); letter-spacing: 3px; }
+        .alerta-final { font-family: 'VT323', monospace; font-size: 0.85em; color: var(--st-amber); margin-top: 8px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 4px; }
+
+        /* Radar */
+        .radar-container { position: relative; width: 240px; height: 240px; margin: 16px 0; border-radius: 50%; overflow: hidden; }
+        #mapaFondo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; z-index: 1; }
+        #mapaFondo.oculto { display: none; }
+        .radar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; border-radius: 50%; }
+
+        /* Rings - Circular (default) */
+        .radar-ring, .hex-ring, .abismo-ring, .diamond-ring, .wave-ring, .cross-ring {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            border: 1.5px solid rgba(228, 9, 20, 0.15); border-radius: 50%;
+        }
+        .radar-ring:nth-child(1), .hex-ring:nth-child(1), .abismo-ring:nth-child(1), .diamond-ring:nth-child(1), .wave-ring:nth-child(1), .cross-ring:nth-child(1) { width: 100%; height: 100%; border-color: rgba(228, 9, 20, 0.4); box-shadow: 0 0 20px var(--accent-glow), inset 0 0 20px rgba(228, 9, 20, 0.05); }
+        .radar-ring:nth-child(2), .hex-ring:nth-child(2), .abismo-ring:nth-child(2), .diamond-ring:nth-child(2), .wave-ring:nth-child(2), .cross-ring:nth-child(2) { width: 75%; height: 75%; }
+        .radar-ring:nth-child(3), .hex-ring:nth-child(3), .abismo-ring:nth-child(3), .diamond-ring:nth-child(3), .wave-ring:nth-child(3), .cross-ring:nth-child(3) { width: 50%; height: 50%; }
+        .radar-ring:nth-child(4), .hex-ring:nth-child(4), .abismo-ring:nth-child(4), .diamond-ring:nth-child(4), .wave-ring:nth-child(4), .cross-ring:nth-child(4) { width: 25%; height: 25%; }
+
+        .radar-linea-h, .radar-linea-v { position: absolute; background: rgba(228, 9, 20, 0.1); }
+        .radar-linea-h { width: 100%; height: 1px; top: 50%; left: 0; }
+        .radar-linea-v { width: 1px; height: 100%; top: 0; left: 50%; }
+        .radar-marco { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 2px solid rgba(228,9,20,0.3); border-radius: 50%; }
+
+        /* Sweep animations */
+        .radar-sweep, .radar-sweep-hex, .radar-sweep-final, .radar-sweep-diamond, .radar-sweep-wave, .radar-sweep-cross {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%;
+            background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 300deg, rgba(228, 9, 20, 0.15) 340deg, rgba(228, 9, 20, 0.4) 360deg);
+            animation: st-sweep 3s linear infinite;
+        }
+        .radar-sweep::after, .radar-sweep-hex::after, .radar-sweep-final::after, .radar-sweep-diamond::after, .radar-sweep-wave::after, .radar-sweep-cross::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 50%; height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            transform-origin: left center;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+        @keyframes st-sweep { to { transform: rotate(360deg); } }
+
+        .punto-objetivo {
+            position: absolute; width: 12px; height: 12px; background: var(--accent);
+            border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--accent-glow); animation: st-pulse 1.5s ease-in-out infinite;
+        }
+        .punto-centro { position: absolute; width: 6px; height: 6px; background: var(--st-white); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.6; }
+        @keyframes st-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.6; } }
+
+        /* Distance display */
+        .display-distancia {
+            background: var(--st-surface); border: 1.5px solid var(--st-gray-dark); border-radius: 10px;
+            padding: 14px 40px; margin: 14px 0; text-align: center;
+        }
+        .etiqueta-distancia { font-family: 'VT323', monospace; font-size: 0.8em; color: var(--st-amber); letter-spacing: 3px; margin-bottom: 4px; }
+        .valor-distancia { font-family: 'VT323', monospace; font-size: 2.8em; color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+
+        /* Signal intensity */
+        .intensidad-container { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .intensidad-label { font-family: 'VT323', monospace; font-size: 0.75em; color: var(--st-gray); letter-spacing: 2px; }
+        .intensidad-barras { display: flex; gap: 4px; align-items: flex-end; }
+        .barra-intensidad { width: 6px; background: var(--st-gray-dark); border-radius: 2px; transition: all 0.3s; }
+        .barra-intensidad:nth-child(1) { height: 8px; }
+        .barra-intensidad:nth-child(2) { height: 12px; }
+        .barra-intensidad:nth-child(3) { height: 16px; }
+        .barra-intensidad:nth-child(4) { height: 20px; }
+        .barra-intensidad:nth-child(5) { height: 24px; }
+        .barra-intensidad.activa { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+
+        /* Search instruction */
+        .instruccion-busqueda { text-align: center; margin: 12px 0; padding: 14px; background: var(--st-surface); border: 1px solid var(--st-gray-dark); border-radius: 8px; }
+        .buscar-texto { font-family: 'VT323', monospace; font-size: 1.1em; color: var(--accent); letter-spacing: 2px; }
+        .objetivo-texto { font-family: 'Special Elite', cursive; font-size: 0.85em; color: var(--st-amber); margin-top: 6px; }
+
+        /* Start button */
+        .btn-iniciar {
+            padding: 16px 40px; background: var(--st-red); border: none; border-radius: 8px;
+            color: white; font-family: 'Orbitron', sans-serif; font-size: 0.75em; font-weight: 700;
+            letter-spacing: 2px; cursor: pointer; margin-top: 14px;
+            box-shadow: 0 4px 15px var(--st-red-glow); transition: all 0.3s;
+        }
+        .btn-iniciar:hover, .btn-iniciar:active { background: #c50812; box-shadow: 0 4px 25px var(--st-red-glow); transform: translateY(-1px); }
+        .btn-iniciar:disabled { background: var(--st-gray-dark); color: var(--st-gray); box-shadow: none; cursor: not-allowed; transform: none; }
+
+        /* === VISOR === */
+        .visor-reves { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; background: var(--st-black); }
+        .video-camara { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.8) brightness(0.2) sepia(0.8) hue-rotate(-15deg) saturate(8); }
+        .btn-activar-camara { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 16px 24px; background: var(--st-surface); border: 1.5px solid var(--st-red); border-radius: 8px; color: var(--st-red); font-family: 'Orbitron', sans-serif; font-size: 0.8em; cursor: pointer; z-index: 115; }
+        .capa-efecto { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+        .capa-lianas { background: url('imagenes/lianas.png') no-repeat center; background-size: cover; opacity: 0.7; z-index: 101; }
+        .capa-esporas { background: url('imagenes/esporas.png') repeat; background-size: 100px; opacity: 0.25; z-index: 102; animation: st-esporas 20s linear infinite; }
+        @keyframes st-esporas { from { background-position: 0 0; } to { background-position: 500px 500px; } }
+        .capa-vignette { background: radial-gradient(ellipse at center, transparent 10%, rgba(228,9,20,0.15) 50%, rgba(0,0,0,0.95) 100%); z-index: 103; }
+        .capa-scanlines { background: repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(0,0,0,0.15) 1px, rgba(0,0,0,0.15) 2px); z-index: 104; opacity: 0.5; }
+        .capa-ruido { z-index: 105; opacity: 0.03; }
+        .capa-agua { z-index: 104; }
+
+        /* HUD */
+        .hud-overlay { position: absolute; top: 0; left: 0; right: 0; padding: 20px; z-index: 110; }
+        .hud-izquierda { display: flex; flex-direction: column; gap: 4px; }
+        .hud-texto { font-family: 'VT323', monospace; font-size: 0.85em; color: var(--accent); letter-spacing: 2px; opacity: 0.8; }
+        .hud-alerta { color: var(--st-amber); animation: st-flicker 3s ease-in-out infinite; }
+        .contador-brechas { display: flex; gap: 6px; margin-top: 8px; }
+        .brecha-icon { width: 18px; height: 18px; border: 1.5px solid var(--st-gray-dark); border-radius: 50%; transition: all 0.3s; }
+        .brecha-icon.sellada { background: var(--st-green); border-color: var(--st-green); box-shadow: 0 0 6px rgba(57, 255, 20, 0.3); }
+        .brecha-icon.activa { background: var(--accent); border-color: var(--st-amber); box-shadow: 0 0 8px var(--accent-glow); animation: st-pulse 1.5s infinite; }
+        .indicador-energia { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+        .barra-energia { width: 80px; height: 6px; background: var(--st-gray-dark); border-radius: 3px; overflow: hidden; }
+        .barra-energia-fill { width: 100%; height: 100%; background: linear-gradient(90deg, var(--st-red), var(--st-amber)); border-radius: 3px; animation: st-energy 4s ease-in-out infinite; }
+        @keyframes st-energy { 0%, 100% { width: 100%; } 50% { width: 60%; } }
+
+        /* Portal indicator */
+        .indicador-brecha { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 115; text-align: center; }
+        .icono-brecha { margin-bottom: 8px; }
+        .portal-visual { width: 120px; height: 120px; border: 3px solid var(--accent); border-radius: 50%; margin: 0 auto 12px; animation: st-portal-rotate 6s linear infinite; box-shadow: 0 0 40px var(--accent-glow); display: flex; align-items: center; justify-content: center; }
+        @keyframes st-portal-rotate { to { transform: rotate(360deg); } }
+        .portal-inner { width: 60px; height: 60px; border: 2px solid var(--st-amber); border-radius: 50%; background: rgba(0,0,0,0.5); }
+        .texto-brecha { font-family: 'VT323', monospace; font-size: 1em; color: var(--accent); letter-spacing: 3px; animation: st-flicker 2s ease-in-out infinite; }
+
+        /* Resolver button */
+        .btn-resolver {
+            display: none; position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+            padding: 18px 40px; background: var(--st-red); border: 2px solid var(--st-amber);
+            border-radius: 8px; color: white; font-family: 'Creepster', cursive; font-size: 1.2em;
+            cursor: pointer; z-index: 120; box-shadow: 0 4px 20px var(--st-red-glow); transition: all 0.3s;
+        }
+        .btn-resolver:active { transform: translateX(-50%) scale(0.97); }
+
+        /* Narrative panel */
+        .panel-narrativo {
+            display: none; position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.9) 70%, transparent 100%);
+            padding: 24px 20px; z-index: 125; max-height: 40%; overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .panel-narrativo.activo { display: block; }
+        .narrativo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .narrativo-titulo { font-family: 'Creepster', cursive; color: var(--accent); display: flex; align-items: center; gap: 8px; font-size: 1.1em; }
+        .narrativo-controles { display: flex; gap: 6px; }
+        .btn-silenciar, .btn-repetir { background: var(--st-surface); border: 1px solid var(--st-gray-dark); border-radius: 6px; color: var(--st-gray); padding: 6px 12px; font-family: 'VT323', monospace; font-size: 0.9em; cursor: pointer; transition: all 0.3s; }
+        .btn-silenciar:hover, .btn-repetir:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-repetir { display: none; }
+        .btn-repetir.visible { display: block; }
+        .narrativo-texto { font-family: 'Special Elite', cursive; font-size: 0.9em; color: #bbb; line-height: 1.8; }
+
+        /* Footer */
+        .footer-info { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 111; }
+        .btn-salir { background: transparent; border: 1px solid var(--st-gray-dark); border-radius: 6px; color: var(--st-gray); padding: 10px 24px; font-family: 'VT323', monospace; font-size: 0.9em; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
+        .btn-salir:hover { border-color: var(--st-red); color: var(--st-red); }
+
+        /* Scare effect */
+        .efecto-susto { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 150; pointer-events: none; opacity: 0; }
+        .efecto-susto.activo { animation: st-susto 1.5s ease-out; }
+        @keyframes st-susto { 0% { opacity: 0; } 5% { opacity: 1; background: var(--st-black); } 8% { background: var(--st-red); } 100% { opacity: 0; } }
+
+        /* === QUIZ === */
+        .modal-quiz { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10,10,10,0.99); z-index: 200; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+        .quiz-container { max-width: 440px; margin: 0 auto; padding-top: 24px; }
+        .quiz-header { margin-bottom: 20px; }
+        .quiz-titulo { font-family: 'Creepster', cursive; font-size: 1.4em; color: var(--accent); text-align: center; margin-bottom: 6px; text-shadow: 0 0 15px var(--accent-glow); }
+        .quiz-subtitulo { font-family: 'VT323', monospace; color: var(--st-amber); text-align: center; font-size: 0.95em; letter-spacing: 2px; }
+        .quiz-progreso { display: flex; justify-content: center; gap: 10px; margin: 18px 0; }
+        .progreso-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--st-gray-dark); border: 1.5px solid #444; transition: all 0.3s; }
+        .progreso-dot.activo { background: var(--accent); border-color: var(--st-amber); box-shadow: 0 0 8px var(--accent-glow); }
+        .progreso-dot.completado { background: var(--st-green); border-color: var(--st-green); }
+        .quiz-timer { font-family: 'VT323', monospace; font-size: 1.5em; color: var(--st-amber); text-align: center; margin: 14px 0; }
+        .quiz-puntos { font-family: 'VT323', monospace; font-size: 1.1em; color: var(--st-green); text-align: center; margin-bottom: 14px; }
+        .quiz-pregunta { font-family: 'Special Elite', cursive; color: var(--st-white); text-align: center; margin-bottom: 24px; padding: 20px; background: var(--st-surface); border-left: 3px solid var(--accent); border-radius: 6px; line-height: 1.7; font-size: 0.95em; }
+        .quiz-opciones { display: flex; flex-direction: column; gap: 10px; }
+        .btn-opcion {
+            width: 100%; padding: 18px 20px; background: var(--st-surface); border: 1.5px solid var(--st-gray-dark);
+            border-radius: 8px; color: #ccc; font-family: 'Special Elite', cursive; font-size: 0.95em;
+            text-align: left; cursor: pointer; transition: all 0.3s; line-height: 1.4;
+        }
+        .btn-opcion:hover, .btn-opcion:active { border-color: var(--accent); background: rgba(228, 9, 20, 0.05); }
+        .btn-opcion.correcta { background: rgba(57, 255, 20, 0.1); border-color: var(--st-green); color: var(--st-green); }
+        .btn-opcion.incorrecta { background: rgba(228, 9, 20, 0.1); border-color: var(--st-red); color: var(--st-red); }
+
+        /* Success screen */
+        .pantalla-exito { display: none; text-align: center; padding: 40px 0; }
+        .pantalla-exito.activo { display: block; }
+        .exito-icono { font-size: 3em; color: var(--st-green); margin-bottom: 16px; }
+        .exito-titulo { font-family: 'Creepster', cursive; font-size: 1.6em; color: var(--st-green); margin-bottom: 12px; text-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
+        .exito-mensaje { font-family: 'Special Elite', cursive; color: #bbb; font-size: 0.9em; line-height: 1.7; margin-bottom: 16px; }
+        .exito-puntos { font-family: 'VT323', monospace; font-size: 1.8em; color: var(--st-green); margin: 20px 0; }
+        .exito-stats { display: flex; justify-content: center; gap: 24px; margin: 20px 0; }
+        .stat-item { text-align: center; }
+        .stat-valor { font-family: 'VT323', monospace; font-size: 1.8em; color: var(--accent); }
+        .stat-label { font-family: 'Orbitron', sans-serif; font-size: 0.55em; color: var(--st-gray); letter-spacing: 2px; margin-top: 4px; }
+        .btn-siguiente {
+            padding: 16px 32px; background: var(--st-green); border: none; border-radius: 8px;
+            color: var(--st-black); font-family: 'Orbitron', sans-serif; font-size: 0.8em; font-weight: 700;
+            letter-spacing: 2px; cursor: pointer; box-shadow: 0 4px 15px rgba(57, 255, 20, 0.3); transition: all 0.3s;
+        }
+        .btn-siguiente:hover, .btn-siguiente:active { box-shadow: 0 4px 25px rgba(57, 255, 20, 0.5); transform: translateY(-1px); }
+
+        /* Score floating button */
+        .btn-puntuacion-flotante {
+            position: fixed; top: 16px; right: 16px; z-index: 180;
+            background: var(--st-surface); border: 1.5px solid var(--st-amber); border-radius: 20px;
+            padding: 8px 16px; color: var(--st-amber); font-family: 'VT323', monospace;
+            font-size: 0.95em; cursor: pointer; letter-spacing: 1px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.5); transition: all 0.3s;
+        }
+        .btn-puntuacion-flotante:hover { border-color: var(--st-green); color: var(--st-green); }
+        .icono-estrella { margin-right: 2px; }
+
+        /* Score modal */
+        .modal-puntuacion { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 190; overflow-y: auto; padding: 20px; }
+        .modal-puntuacion.activo { display: block; }
+        .modal-puntuacion-contenido {
+            max-width: 400px; margin: 40px auto; background: var(--st-surface);
+            border: 1px solid var(--st-gray-dark); border-radius: 12px; padding: 24px;
+        }
+        .modal-puntuacion-contenido h3 { font-family: 'Creepster', cursive; color: var(--accent); font-size: 1.3em; text-align: center; margin-bottom: 20px; }
+        .puntuacion-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--st-gray-dark); font-family: 'VT323', monospace; font-size: 1em; color: #bbb; }
+        .puntuacion-item span:last-child { color: var(--st-green); }
+        .puntuacion-reglas { margin-top: 16px; padding: 14px; background: rgba(228, 9, 20, 0.03); border: 1px solid var(--st-gray-dark); border-radius: 8px; }
+        .puntuacion-reglas h4 { font-family: 'VT323', monospace; color: var(--st-amber); font-size: 1em; margin-bottom: 8px; }
+        .puntuacion-reglas p { font-family: 'VT323', monospace; color: var(--st-gray); font-size: 0.9em; margin-bottom: 4px; }
+        .btn-cerrar-puntuacion { width: 100%; margin-top: 16px; padding: 12px; background: transparent; border: 1px solid var(--st-gray-dark); border-radius: 8px; color: var(--st-gray); font-family: 'Orbitron', sans-serif; font-size: 0.7em; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
+        .btn-cerrar-puntuacion:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Flicker animation */
+        @keyframes st-flicker {
+            0%, 100% { opacity: 1; } 41% { opacity: 1; } 42% { opacity: 0.4; } 43% { opacity: 1; }
+            80% { opacity: 1; } 81% { opacity: 0.6; } 82% { opacity: 1; }
+        }
+
+        /* Portal 7 specific: search, truth, final score screens */
+        .pantalla-buscar-portal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 210; background: var(--st-black); }
+        .buscar-video { width: 100%; height: 100%; object-fit: cover; }
+        .buscar-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); }
+        .buscar-mensaje { font-family: 'Creepster', cursive; font-size: 1.4em; color: var(--accent); text-align: center; animation: st-flicker 1.5s infinite; }
+        .buscar-submensaje { font-family: 'VT323', monospace; color: var(--st-amber); text-align: center; margin-top: 8px; letter-spacing: 2px; }
+        .buscar-indicador { width: 160px; height: 160px; border: 3px dashed var(--accent); border-radius: 50%; margin-top: 24px; display: flex; align-items: center; justify-content: center; animation: st-portal-rotate 4s linear infinite; }
+        .buscar-icono { font-size: 2.5em; }
+        .buscar-cargando { font-family: 'VT323', monospace; color: var(--st-gray); margin-top: 16px; letter-spacing: 2px; }
+        .portal-detectado { display: none; text-align: center; }
+        .portal-detectado.activo { display: block; }
+        #canvasDeteccion { display: none; }
+
+        .pantalla-verdad { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 220; background: linear-gradient(to bottom, var(--st-black) 0%, rgba(228,9,20,0.08) 50%, var(--st-black) 100%); padding: 30px 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .verdad-contenido { max-width: 480px; margin: 0 auto; text-align: center; }
+        .verdad-titulo { font-family: 'Creepster', cursive; font-size: 1.6em; color: var(--accent); margin-bottom: 20px; text-shadow: 0 0 20px var(--accent-glow); }
+        .verdad-texto { font-family: 'Special Elite', cursive; color: #bbb; line-height: 1.8; font-size: 0.95em; text-align: left; }
+
+        .pantalla-puntuacion { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 230; background: var(--st-black); overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+        .puntuacion-contenido { max-width: 440px; margin: 0 auto; text-align: center; padding: 30px 0; }
+        .puntuacion-icono { font-size: 2.5em; margin-bottom: 12px; }
+        .puntuacion-titulo { font-family: 'Creepster', cursive; font-size: clamp(1.5em, 6vw, 2em); color: var(--st-green); text-shadow: 0 0 20px rgba(57,255,20,0.4); margin-bottom: 6px; }
+        .puntuacion-subtitulo { font-family: 'VT323', monospace; color: var(--st-amber); font-size: 1em; letter-spacing: 2px; margin-bottom: 24px; }
+        .puntuacion-caja { background: var(--st-surface); border: 2px solid var(--st-green); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .puntuacion-numero { font-family: 'VT323', monospace; font-size: 3.5em; color: var(--st-green); text-shadow: 0 0 15px rgba(57,255,20,0.3); }
+        .puntuacion-label { font-family: 'Orbitron', sans-serif; font-size: 0.6em; color: var(--st-gray); letter-spacing: 4px; margin-top: 4px; }
+        .estrellas { margin: 16px 0; }
+        .estrella { font-size: 1.8em; color: var(--st-gray-dark); margin: 0 2px; transition: color 0.3s; }
+        .estrella.activa { color: var(--st-amber); text-shadow: 0 0 10px rgba(212,165,116,0.4); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .stat-box { background: var(--st-surface); border: 1px solid var(--st-gray-dark); border-radius: 8px; padding: 14px; text-align: center; }
+        .stat-box .stat-valor { font-family: 'VT323', monospace; font-size: 1.6em; color: var(--accent); }
+        .stat-box .stat-label { font-family: 'Orbitron', sans-serif; font-size: 0.5em; color: var(--st-gray); letter-spacing: 2px; margin-top: 4px; }
+        .rango-titulo { font-family: 'Creepster', cursive; font-size: 1.3em; color: var(--st-amber); margin: 16px 0; text-shadow: 0 0 10px rgba(212,165,116,0.3); }
+        .btn-guardar { width: 100%; padding: 14px; background: var(--st-surface); border: 1.5px solid var(--st-amber); border-radius: 8px; color: var(--st-amber); font-family: 'Orbitron', sans-serif; font-size: 0.75em; letter-spacing: 1px; cursor: pointer; margin-bottom: 12px; transition: all 0.3s; }
+        .btn-guardar:hover { background: rgba(212,165,116,0.1); }
+        .compartir-redes { display: flex; justify-content: center; gap: 12px; margin: 16px 0; }
+        .btn-red { width: 48px; height: 48px; border-radius: 50%; background: var(--st-surface); border: 1px solid var(--st-gray-dark); font-size: 1.2em; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .btn-red:hover { border-color: var(--accent); background: rgba(228,9,20,0.05); }
+        .btn-finalizar { width: 100%; padding: 16px; background: var(--st-red); border: none; border-radius: 8px; color: white; font-family: 'Orbitron', sans-serif; font-size: 0.8em; font-weight: 700; letter-spacing: 2px; cursor: pointer; margin-top: 12px; box-shadow: 0 4px 15px var(--st-red-glow); transition: all 0.3s; }
+        .btn-finalizar:hover { box-shadow: 0 4px 25px var(--st-red-glow); }
+
+        /* Map hidden on small viewports */
+        .leaflet-control-attribution { display: none !important; }
+
+        /* Portal 4 accent: gold */
+        :root { --accent: #ffd700; --accent-glow: rgba(255, 215, 0, 0.4); --dorado-mistico: #ffd700; --purpura-oscuro: #4a0080; }
+        .pantalla-radar { background: radial-gradient(ellipse at 50% 30%, rgba(255,215,0,0.04) 0%, transparent 50%), var(--st-black); }
+    </style>
+</head>
+<body>
+    <button class="btn-puntuacion-flotante" onclick="abrirModalPuntuacion()">⭐ <span id="puntosFlotante">0</span> PTS</button>
+    <div class="modal-puntuacion" id="modalPuntuacion"><div class="modal-puntuacion-contenido"><h3>📊 Tu Puntuación</h3><div class="puntuacion-item"><span>Puntos actuales:</span><span id="puntosActualesModal">0</span></div><div class="puntuacion-item"><span>Respuestas correctas:</span><span id="correctasModal">0</span></div><div class="puntuacion-item"><span>Respuestas incorrectas:</span><span id="incorrectasModal">0</span></div><div class="puntuacion-item"><span>Bonus rapidez:</span><span id="bonusModal">0</span></div><div class="puntuacion-reglas" id="detallePortales"><h4>📍 Puntos por Portal:</h4><div id="listaPortalesPuntos"></div></div><div class="puntuacion-reglas"><h4>📋 Cómo se puntúa:</h4><p>✓ Correcta: +100 pts</p><p>✗ Incorrecta: -25 pts</p><p>⚡ Bonus: +5 a +20 pts</p></div><button class="btn-cerrar-puntuacion" onclick="cerrarModalPuntuacion()">Cerrar</button></div></div>
+    <div class="pantalla-radar" id="pantallaRadar">
+        <div class="header-mision">
+            <p class="numero-brecha">◇ Brecha Dimensional #4 ◇</p>
+            <h1 class="nombre-objetivo">Puerta de los Deseos</h1>
+            <p class="subtitulo-objetivo">Portal Místico de Cazorla</p>
+        </div>
+
+        <div class="radar-container">
+            <div id="mapaFondo" class="oculto"></div>
+            <div class="radar-overlay">
+                <div class="diamond-ring"></div>
+                <div class="diamond-ring"></div>
+                <div class="diamond-ring"></div>
+                <div class="diamond-ring"></div>
+                <div class="radar-sweep-diamond"></div>
+                <div class="punto-objetivo"></div>
+                <div class="punto-centro"></div>
+            </div>
+        </div>
+
+        <div class="display-distancia">
+            <p class="etiqueta-distancia">DISTANCIA AL PORTAL</p>
+            <p class="valor-distancia"><span id="valorMetros">---</span><span> m</span></p>
+        </div>
+
+        <div class="instruccion-busqueda">
+            <p class="buscar-texto">◇ Buscar Objetivo</p>
+            <p class="objetivo-texto">Puerta de los Deseos</p>
+        </div>
+
+        <button class="btn-iniciar" id="btnIniciar"> ACTIVAR BÚSQUEDA SIGUIENTE PORTAL</button>
+    </div>
+
+    <div class="visor-reves" id="visorReves">
+        <video class="video-camara" id="videoCamara" autoplay playsinline muted></video>
+        <button class="btn-activar-camara" id="btnActivarCamara">📷 Activar Cámara</button>
+        <div class="capa-efecto capa-lianas"></div>
+        <div class="capa-efecto capa-esporas"></div>
+        <div class="capa-efecto capa-vignette"></div>
+        <div class="capa-efecto capa-scanlines"></div>
+
+        <div class="hud-overlay">
+            <div>
+                <p class="hud-texto">◉ VISOR DIMENSIONAL v4.0</p>
+                <p class="hud-texto hud-alerta">◇ PORTAL MÍSTICO DETECTADO</p>
+                <div class="contador-brechas">
+                    <div class="brecha-icon sellada"></div>
+                    <div class="brecha-icon sellada"></div>
+                    <div class="brecha-icon sellada"></div>
+                    <div class="brecha-icon activa"></div>
+                    <div class="brecha-icon"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicador-brecha">
+            <div class="portal-visual"><div class="portal-inner"></div></div>
+            <p class="texto-brecha">PORTAL MÍSTICO</p>
+        </div>
+
+        <button class="btn-resolver" id="btnResolver">◇ Sellar Portal</button>
+
+        <!-- Panel narrativo -->
+        <div class="panel-narrativo" id="panelNarrativo">
+            <div class="narrativo-header">
+                <div class="narrativo-titulo"><span class="icono-audio" id="iconoAudio">🔊</span> Conexión Oscura</div>
+                <div class="narrativo-controles"><button class="btn-repetir" id="btnRepetir">🔄 Repetir</button><button class="btn-silenciar" id="btnSilenciar">Silenciar</button></div>
+            </div>
+            <div class="narrativo-texto" id="narrativoTexto"></div>
+        </div>
+
+        <div class="footer-info"><button class="btn-salir" onclick="salirMision()">✕ Abandonar</button></div>
+    </div>
+
+    <div class="efecto-susto" id="efectoSusto"></div>
+
+    <div class="modal-quiz" id="modalQuiz">
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <h2 class="quiz-titulo">◇ Ritual de Sellado</h2>
+                <p class="quiz-subtitulo">Desvela los secretos de la puerta</p>
+                <div class="quiz-progreso" id="quizProgreso"></div>
+                <div class="quiz-timer" id="quizTimer" style="font-family:'VT323',monospace;font-size:1.5em;color:#daa520;text-align:center;margin:15px 0;">⏱ 00:00</div>
+                <div class="quiz-puntos" id="quizPuntos" style="font-family:'VT323',monospace;font-size:1.1em;color:#00ff41;text-align:center;margin-bottom:15px;">Puntos: 0</div>
+            </div>
+            <div id="quizContenido"></div>
+            <div class="pantalla-exito" id="pantallaExito">
+                <div class="exito-icono"><span>✓</span></div>
+                <h2 class="exito-titulo">¡Portal Sellado!</h2>
+                <p class="exito-mensaje">El cuarto portal ha sido cerrado.<br>Los deseos oscuros ya no pueden cruzar.</p>
+                <div class="exito-stats">
+                    <div class="stat-item"><div class="stat-valor">4/7</div><div class="stat-label">BRECHAS SELLADAS</div></div>
+                    <div class="stat-item"><div class="stat-valor">57%</div><div class="stat-label">MISIÓN</div></div>
+                </div>
+                <p class="exito-puntos" id="exitoPuntos" style="font-family:'VT323',monospace;font-size:1.8em;color:#00ff41;margin:20px 0;">Puntos: 0</p>
+                <button class="btn-siguiente" onclick="siguientePunto()">Siguiente Portal →</button>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioAmbiente" src="imagenes/ambiente.mp3" loop preload="auto"></audio>
+    <audio id="audioSusto" src="imagenes/scare.mp3" preload="auto"></audio>
+    <audio id="audioPitido" src="imagenes/beep.mp3" preload="auto"></audio>
+    <audio id="audioNarrativo" src="imagenes/audio-puerta-deseos.mp3" preload="auto"></audio>
+
+    <script>
+        if (localStorage.getItem('tragantia_auth') !== 'true') window.location.href = 'index.html';
+        localStorage.setItem('tragantia_progreso', 'puerta-deseos.html');
+
+        const CONFIG = {
+            destino: { lat: 37.909739359534434, lng: -3.0009837979155507, radio: 10 },
+            textoNarrativo: "Tres siglos de deseos susurrados frente a esta puerta. Promesas de amor eterno, sueños de familias felices, esperanzas de una vida mejor... ¿Cuántos de esos deseos se cumplieron? ¿Y cuántos quedaron flotando en el aire, sin respuesta, alimentando algo que habita entre los mundos? La Tragantía también pidió un deseo una vez: que su padre regresara. Nunca se cumplió. Quizá por eso siente tanta afinidad con esta puerta... los deseos rotos son su alimento favorito. Ten cuidado con lo que pides aquí. Ella está escuchando. Y a veces... responde. Sella esta brecha, pero no bajes la guardia. El camino hacia ella aún no ha terminado.",
+            preguntas: [
+                { texto: "En la fachada de la Puerta de los Deseos, un cartel enumera las actividades que pueden realizarse en Cazorla y su Parque Natural. ¿Puedes descifrar cuántas vocales se ocultan en este cartel?", opciones: ["Entre 65 y 74", "Entre 75 y 77", "Entre 55 y 57"], correcta: 0 },
+                { texto: "La Puerta de los Deseos, cargada de historia y misticismo, proviene de una antigua ermita y guarda un encanto peculiar. ¿Qué crees que es lo que se debe hacer en la Puerta de los Deseos para desatar su magia?", opciones: ["Frotar la puerta y pedir un deseo", "Cantar la canción de los deseos", "Besar un ser querido y pedir un deseo"], correcta: 2 },
+                { texto: "La Puerta de los Deseos posee un tirador que llama la atención por su singularidad. ¿Podrías desvelar el enigma y decirnos qué es ese curioso tirador?", opciones: ["Una cabeza de caballo", "Un grifo antiguo", "Una mano"], correcta: 1 },
+                { texto: "Justo en las cercanías de la enigmática Puerta de los Deseos, un callejón aguarda en silencio, envuelto en un halo de misterio. ¿Cuál es el enigmático nombre que este estrecho sendero lleva?", opciones: ["Callejón de la Moreda", "Callejón de los Morenos", "Callejón de las Morenicas"], correcta: 2 },
+                { texto: "Junto a una fachada próxima a la Puerta de los Deseos, una hornacina resguarda una cruz con la imagen de Jesucristo crucificado. Un arco de ladrillos abraza esta reliquia sagrada. ¿Cuántos ladrillos conforman este enigmático marco?", opciones: ["Entre 85 y 90", "Entre 65 y 80", "Entre 95 y 100"], correcta: 1 }
+            ]
+        };
+
+        let estado = { visorActivo: false, preguntaActual: 0, intervaloPitido: null, ultimaDistancia: Infinity, narrativoMostrado: false, audioSilenciado: false, narracionActiva: false, textoTerminado: false, audioTerminado: false, puntuacionTotal: 0, tiempoInicioPregunta: 0, respuestasCorrectas: 0, respuestasIncorrectas: 0, bonusTotal: 0, procesandoRespuesta: false };
+        let intervaloTimer = null, segundosTranscurridos = 0;
+        let mapa = null, marcadorUsuario = null, marcadorDestino = null;
+        
+        // Cargar puntos de portales anteriores
+        const puntosAnteriores = parseInt(localStorage.getItem('tragantia_puntos') || '0');
+        const correctasAnteriores = parseInt(localStorage.getItem('tragantia_correctas_total') || '0');
+        const incorrectasAnteriores = parseInt(localStorage.getItem('tragantia_incorrectas_total') || '0');
+        const bonusAnteriores = parseInt(localStorage.getItem('tragantia_bonus_total') || '0');
+
+        const elementos = {
+            pantallaRadar: document.getElementById('pantallaRadar'),
+            visorReves: document.getElementById('visorReves'),
+            videoCamara: document.getElementById('videoCamara'),
+            btnIniciar: document.getElementById('btnIniciar'),
+            btnResolver: document.getElementById('btnResolver'),
+            valorMetros: document.getElementById('valorMetros'),
+            modalQuiz: document.getElementById('modalQuiz'),
+            quizContenido: document.getElementById('quizContenido'),
+            quizProgreso: document.getElementById('quizProgreso'),
+            quizTimer: document.getElementById('quizTimer'),
+            quizPuntos: document.getElementById('quizPuntos'),
+            exitoPuntos: document.getElementById('exitoPuntos'),
+            pantallaExito: document.getElementById('pantallaExito'),
+            efectoSusto: document.getElementById('efectoSusto'),
+            audioAmbiente: document.getElementById('audioAmbiente'),
+            audioSusto: document.getElementById('audioSusto'),
+            audioPitido: document.getElementById('audioPitido'),
+            audioNarrativo: document.getElementById('audioNarrativo'),
+            panelNarrativo: document.getElementById('panelNarrativo'),
+            narrativoTexto: document.getElementById('narrativoTexto'),
+            iconoAudio: document.getElementById('iconoAudio'),
+            btnSilenciar: document.getElementById('btnSilenciar'),
+            btnRepetir: document.getElementById('btnRepetir'),
+            btnActivarCamara: document.getElementById('btnActivarCamara')
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            elementos.audioAmbiente.load();
+            elementos.audioSusto.load();
+            elementos.audioPitido.load();
+            elementos.audioNarrativo.load();
+            crearIndicadoresProgreso();
+            // NO cargar puntos previos en estado - ya se usa puntosAnteriores
+            actualizarPuntosFlotante();
+            elementos.btnSilenciar.addEventListener('click', toggleSilenciar);
+            elementos.btnRepetir.addEventListener('click', repetirNarracion);
+            elementos.btnActivarCamara.addEventListener('click', intentarCamara);
+
+            // Bloquear botón atrás del navegador
+            history.pushState(null, null, location.href);
+            window.addEventListener('popstate', function() { history.pushState(null, null, location.href); });
+            inicializarMapa();
+        });
+
+        function inicializarMapa() {
+            try {
+                if (typeof L === 'undefined') return;
+                const mapaDiv = document.getElementById('mapaFondo');
+                if (!mapaDiv) return;
+                mapaDiv.classList.remove('oculto');
+                mapa = L.map('mapaFondo', { center: [CONFIG.destino.lat, CONFIG.destino.lng], zoom: 17, zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false });
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapa);
+                const iconoPortal = L.divIcon({ className: 'marcador-portal', html: '<div style="width:16px;height:16px;background:#ff1744;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px #ff1744;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+                marcadorDestino = L.marker([CONFIG.destino.lat, CONFIG.destino.lng], { icon: iconoPortal }).addTo(mapa);
+                const iconoUsuario = L.divIcon({ className: 'marcador-usuario', html: '<div style="width:12px;height:12px;background:#00ff41;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px #00ff41;"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });
+                marcadorUsuario = L.marker([CONFIG.destino.lat, CONFIG.destino.lng], { icon: iconoUsuario }).addTo(mapa);
+            } catch (err) { document.getElementById('mapaFondo')?.classList.add('oculto'); }
+        }
+        function actualizarMapa(lat, lng) {
+            if (mapa && marcadorUsuario) {
+                marcadorUsuario.setLatLng([lat, lng]);
+                try { mapa.fitBounds(L.latLngBounds([lat, lng], [CONFIG.destino.lat, CONFIG.destino.lng]), { padding: [30, 30], maxZoom: 18 }); } catch (e) { mapa.setView([lat, lng], 17); }
+            }
+        }
+
+        function calcularIntervalosPitido(distancia) {
+            if (distancia > 500) return 3000;
+            if (distancia > 300) return 2000;
+            if (distancia > 150) return 1200;
+            if (distancia > 80) return 800;
+            if (distancia > 50) return 500;
+            if (distancia > 30) return 300;
+            return 150;
+        }
+
+        function reproducirPitido() {
+            if (estado.visorActivo) return;
+            elementos.audioPitido.currentTime = 0;
+            elementos.audioPitido.volume = 0.5;
+            elementos.audioPitido.play().catch(() => {});
+        }
+
+        function actualizarSistemaPitidos(distancia) {
+            const nuevoIntervalo = calcularIntervalosPitido(distancia);
+            if (estado.intervaloPitido) clearInterval(estado.intervaloPitido);
+            estado.intervaloPitido = setInterval(reproducirPitido, nuevoIntervalo);
+            if (Math.abs(estado.ultimaDistancia - distancia) > 20) reproducirPitido();
+            estado.ultimaDistancia = distancia;
+        }
+
+        function detenerPitidos() {
+            if (estado.intervaloPitido) { clearInterval(estado.intervaloPitido); estado.intervaloPitido = null; }
+        }
+
+        elementos.btnIniciar.addEventListener('click', () => {
+            elementos.audioAmbiente.play().then(() => elementos.audioAmbiente.pause()).catch(() => {});
+            elementos.audioSusto.play().then(() => elementos.audioSusto.pause()).catch(() => {});
+            elementos.audioPitido.play().then(() => elementos.audioPitido.pause()).catch(() => {});
+            elementos.audioNarrativo.play().then(() => { elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; }).catch(() => {});
+            if (navigator.geolocation) {
+                elementos.btnIniciar.disabled = true;
+                elementos.btnIniciar.innerHTML = '◇ Localizando...';
+                navigator.geolocation.watchPosition(actualizarPosicion, () => {
+                    elementos.btnIniciar.disabled = false;
+                    elementos.btnIniciar.innerHTML = '◇ Reintentar';
+                    detenerPitidos();
+                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+            }
+        });
+
+        function actualizarPosicion(pos) {
+            const dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng);
+            elementos.valorMetros.textContent = Math.round(dist);
+            actualizarMapa(pos.coords.latitude, pos.coords.longitude);
+            actualizarSistemaPitidos(dist);
+            if (dist <= CONFIG.destino.radio && !estado.visorActivo) { detenerPitidos(); activarVisor(); }
+        }
+
+        function activarVisor() {
+            estado.visorActivo = true;
+            elementos.pantallaRadar.style.display = 'none';
+            elementos.visorReves.style.display = 'block';
+            elementos.btnResolver.style.display = 'none';
+            intentarCamara();
+            elementos.audioAmbiente.volume = 0.2;
+            elementos.audioAmbiente.play().catch(() => {});
+            iniciarNarracion();
+            setTimeout(() => programarSusto(), 15000);
+        }
+
+        function intentarCamara() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stream => {
+                elementos.videoCamara.srcObject = stream;
+                elementos.btnActivarCamara.style.display = 'none';
+            }).catch(() => {
+                elementos.btnActivarCamara.style.display = 'block';
+            });
+        }
+
+        // === SISTEMA NARRATIVO ===
+        function iniciarNarracion() {
+            if (estado.narrativoMostrado) { elementos.btnResolver.style.display = 'block'; return; }
+            estado.narrativoMostrado = true;
+            estado.narracionActiva = true;
+            estado.textoTerminado = false;
+            estado.audioTerminado = false;
+            elementos.panelNarrativo.classList.add('activo');
+            elementos.audioAmbiente.volume = 0.1;
+            elementos.audioNarrativo.volume = 0.9;
+            elementos.audioNarrativo.play().catch(() => { estado.audioTerminado = true; verificarFinNarracion(); });
+            const texto = CONFIG.textoNarrativo;
+            let index = 0;
+            elementos.narrativoTexto.innerHTML = '';
+            const typewriter = setInterval(() => {
+                if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
+                else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
+            }, 50);
+            elementos.audioNarrativo.addEventListener('ended', () => { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true });
+        }
+
+        function verificarFinNarracion() {
+            if (estado.textoTerminado && estado.audioTerminado) finalizarNarracion();
+        }
+
+        function finalizarNarracion() {
+            if (!estado.narracionActiva) return;
+            estado.narracionActiva = false;
+            elementos.btnRepetir.classList.add('visible');
+            elementos.audioAmbiente.volume = 0.4;
+            setTimeout(() => { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(() => { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500);
+        }
+
+        function repetirNarracion() {
+            estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false;
+            elementos.btnRepetir.classList.remove('visible');
+            elementos.panelNarrativo.classList.add('activo'); elementos.panelNarrativo.classList.remove('fadeOut');
+            elementos.audioAmbiente.volume = 0.1;
+            elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9;
+            elementos.audioNarrativo.play().catch(() => { estado.audioTerminado = true; verificarFinNarracion(); });
+            const texto = CONFIG.textoNarrativo; let index = 0; elementos.narrativoTexto.innerHTML = '';
+            const typewriter = setInterval(() => {
+                if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
+                else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
+            }, 50);
+            elementos.audioNarrativo.addEventListener('ended', () => { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true });
+        }
+
+        function toggleSilenciar() {
+            estado.audioSilenciado = !estado.audioSilenciado;
+            if (estado.audioSilenciado) { elementos.audioNarrativo.volume = 0; elementos.iconoAudio.classList.add('silenciado'); elementos.btnSilenciar.textContent = 'Activar'; }
+            else { elementos.audioNarrativo.volume = 0.8; elementos.iconoAudio.classList.remove('silenciado'); elementos.btnSilenciar.textContent = 'Silenciar'; }
+        }
+
+        function programarSusto() {
+            if (!estado.visorActivo) return;
+            setTimeout(() => {
+                if (estado.visorActivo && elementos.modalQuiz.style.display !== 'block' && !estado.narracionActiva) ejecutarSusto();
+                programarSusto();
+            }, 8000 + Math.random() * 15000);
+        }
+
+        function ejecutarSusto() {
+            if (estado.narracionActiva) return;
+            elementos.efectoSusto.classList.add('activo');
+            elementos.audioSusto.currentTime = 0;
+            elementos.audioSusto.volume = 0.7;
+            elementos.audioSusto.play();
+            elementos.videoCamara.style.filter = 'contrast(4) brightness(3) hue-rotate(180deg) invert(1)';
+            setTimeout(() => {
+                elementos.efectoSusto.classList.remove('activo');
+                elementos.videoCamara.style.filter = '';
+            }, 1000);
+        }
+
+        elementos.btnResolver.addEventListener('click', () => {
+            elementos.modalQuiz.style.display = 'block';
+            estado.tiempoInicioPregunta = Date.now();
+            iniciarTimerQuiz();
+            cargarPregunta();
+        });
+
+        function iniciarTimerQuiz() {
+            segundosTranscurridos = 0; actualizarDisplayTimer();
+            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000);
+        }
+        function actualizarDisplayTimer() {
+            const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
+            const secs = (segundosTranscurridos % 60).toString().padStart(2, '0');
+            elementos.quizTimer.textContent = '⏱ ' + mins + ':' + secs;
+        }
+
+        function crearIndicadoresProgreso() {
+            elementos.quizProgreso.innerHTML = '';
+            CONFIG.preguntas.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'progreso-dot' + (i === 0 ? ' activo' : '');
+                elementos.quizProgreso.appendChild(dot);
+            });
+        }
+
+        function cargarPregunta() {
+            estado.tiempoInicioPregunta = Date.now();
+            const p = CONFIG.preguntas[estado.preguntaActual];
+            document.querySelectorAll('.progreso-dot').forEach((dot, i) => {
+                dot.classList.remove('activo');
+                if (i < estado.preguntaActual) dot.classList.add('completado');
+                if (i === estado.preguntaActual) dot.classList.add('activo');
+            });
+            elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal; actualizarPuntosFlotante();
+            elementos.quizContenido.innerHTML = `<p class="quiz-pregunta">${p.texto}</p><div class="quiz-opciones">${p.opciones.map((opt, i) => `<button class="btn-opcion" data-index="${i}">${opt}</button>`).join('')}</div>`;
+            document.querySelectorAll('.btn-opcion').forEach(btn => btn.addEventListener('click', (e) => verificarRespuesta(parseInt(e.target.dataset.index))));
+        }
+
+        function verificarRespuesta(index) {
+            if (estado.procesandoRespuesta) return;
+            estado.procesandoRespuesta = true;
+            const p = CONFIG.preguntas[estado.preguntaActual];
+            const btns = document.querySelectorAll('.btn-opcion');
+            const tiempoRespuesta = (Date.now() - estado.tiempoInicioPregunta) / 1000;
+            btns.forEach(btn => btn.disabled = true);
+            if (index === p.correcta) {
+                btns[index].classList.add('correcta');
+                let puntos = 100, bonus = 0;
+                if (tiempoRespuesta < 15) bonus = 20;
+                else if (tiempoRespuesta < 30) bonus = 15;
+                else if (tiempoRespuesta < 60) bonus = 10; else if (tiempoRespuesta < 120) bonus = 5;
+                estado.puntuacionTotal += puntos + bonus;
+                estado.bonusTotal += bonus;
+                estado.respuestasCorrectas++;
+                elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (+' + (puntos + bonus) + ')'; actualizarPuntosFlotante();
+                setTimeout(() => {
+                    estado.preguntaActual++;
+                    estado.procesandoRespuesta = false;
+                    if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); }
+                    else cargarPregunta();
+                }, 800);
+            } else {
+                btns[index].classList.add('incorrecta');
+                estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - 25);
+                estado.respuestasIncorrectas++;
+                elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-25)'; actualizarPuntosFlotante();
+                ejecutarSusto();
+                setTimeout(() => { btns.forEach(btn => { btn.disabled = false; btn.classList.remove('incorrecta'); }); estado.procesandoRespuesta = false; }, 1000);
+            }
+        }
+
+        function mostrarExito() {
+            elementos.quizContenido.style.display = 'none';
+            elementos.pantallaExito.style.display = 'flex';
+            
+            // Añadir bonus por completar portal
+            estado.puntuacionTotal += 50;
+            
+            // Calcular totales acumulados
+            const totalPuntos = puntosAnteriores + estado.puntuacionTotal;
+            const totalCorrectas = correctasAnteriores + estado.respuestasCorrectas;
+            const totalIncorrectas = incorrectasAnteriores + estado.respuestasIncorrectas;
+            const totalBonus = bonusAnteriores + estado.bonusTotal;
+            
+            // Guardar totales acumulados
+            localStorage.setItem('tragantia_puntos', totalPuntos);
+            localStorage.setItem('tragantia_correctas_total', totalCorrectas);
+            localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
+            localStorage.setItem('tragantia_bonus_total', totalBonus);
+            
+            const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
+            const secs = (segundosTranscurridos % 60).toString().padStart(2, '0');
+            localStorage.setItem('tragantia_portal4_completado', 'true');
+            localStorage.setItem('tragantia_portal4_puntos', estado.puntuacionTotal);
+            localStorage.setItem('tragantia_portal4_tiempo', mins + ':' + secs);
+            localStorage.setItem('tragantia_progreso', 'plaza-santa-maria.html');
+            
+            elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
+            actualizarPuntosFlotante();
+            elementos.audioAmbiente.pause();
+        }
+
+        function siguientePunto() { window.location.href = 'plaza-santa-maria.html'; }
+        function salirMision() {
+            if (confirm('¿Abandonar misión?')) {
+                detenerPitidos();
+                if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(t => t.stop());
+                window.location.href = 'index.html';
+            }
+        }
+
+        function calcularDistancia(lat1, lng1, lat2, lng2) {
+            const R = 6371e3, p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+            const dp = (lat2 - lat1) * Math.PI / 180, dl = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dp/2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        function abrirModalPuntuacion() {
+            const totalPuntos = puntosAnteriores + estado.puntuacionTotal;
+            const totalCorrectas = correctasAnteriores + estado.respuestasCorrectas;
+            const totalIncorrectas = incorrectasAnteriores + estado.respuestasIncorrectas;
+            const totalBonus = bonusAnteriores + estado.bonusTotal;
+            document.getElementById('puntosActualesModal').textContent = totalPuntos;
+            document.getElementById('correctasModal').textContent = totalCorrectas;
+            document.getElementById('incorrectasModal').textContent = totalIncorrectas;
+            document.getElementById('bonusModal').textContent = totalBonus;
+            const nombresPortales = ['Plaza Corredera', 'Convento Merced', 'Balcón Zabaleta', 'Puerta Deseos', 'Plaza Sta. María', 'Molino Harinero', 'Castillo'];
+            let htmlPortales = '';
+            for (let i = 1; i <= 7; i++) {
+                const puntosPortal = localStorage.getItem('tragantia_portal' + i + '_puntos');
+                const completado = localStorage.getItem('tragantia_portal' + i + '_completado') === 'true';
+                if (completado && puntosPortal) { htmlPortales += '<p style="margin:3px 0;font-size:0.85em;">Portal ' + i + ': <strong>' + puntosPortal + ' pts</strong></p>'; }
+                else if (i === 4) { htmlPortales += '<p style="margin:3px 0;font-size:0.85em;">Portal 4 (Actual): <strong>' + estado.puntuacionTotal + ' pts</strong></p>'; }
+                else { htmlPortales += '<p style="margin:3px 0;font-size:0.85em;color:#666;">Portal ' + i + ': pendiente</p>'; }
+            }
+            document.getElementById('listaPortalesPuntos').innerHTML = htmlPortales;
+            document.getElementById('modalPuntuacion').classList.add('activo');
+        }
+        function cerrarModalPuntuacion() { document.getElementById('modalPuntuacion').classList.remove('activo'); }
+        function actualizarPuntosFlotante() { document.getElementById('puntosFlotante').textContent = puntosAnteriores + estado.puntuacionTotal; }
+        document.addEventListener('DOMContentLoaded', function() { actualizarPuntosFlotante(); });
+    </script>
+</body>
+</html>
