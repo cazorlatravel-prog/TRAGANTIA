@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Tragantia Escape City - Inicio</title>
+    <title>La Tragantia Escape City - Cazorla</title>
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0a0a0a">
-    <meta name="description" content="Juego de escape urbano con realidad aumentada en Cazorla">
+    <meta name="description" content="Escape City con realidad aumentada en Cazorla. Recorre 7 portales, resuelve enigmas y descubre la leyenda de La Tragantia. Reserva ya tu aventura.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Tragantia">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="imagenes/icon-192.png">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="La Tragantia - Escape City Cazorla">
+    <meta property="og:description" content="Escape urbano con realidad aumentada. 7 portales, enigmas y la leyenda de La Tragantia te esperan en Cazorla.">
+    <meta property="og:image" content="imagenes/tragantia.jpg">
+    <meta property="og:type" content="website">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
 
@@ -34,8 +41,12 @@
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html, body {
-            width: 100%; height: 100%;
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            width: 100%;
             background: var(--st-black);
             color: var(--st-white);
             font-family: 'Orbitron', 'Segoe UI', sans-serif;
@@ -65,24 +76,48 @@
             100% { transform: translateY(-30px); }
         }
 
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 24px 20px 40px;
-            text-align: center;
+        /* === LAYOUT GENERAL === */
+        .landing-wrapper {
             position: relative;
             z-index: 10;
-            min-height: 100vh;
         }
 
-        /* Alerta superior */
-        .alert {
+        section {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* === HERO SECTION === */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 50% 30%, rgba(228, 9, 20, 0.08) 0%, transparent 70%),
+                radial-gradient(ellipse at 50% 80%, rgba(228, 9, 20, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
             font-family: 'VT323', monospace;
             color: var(--st-red);
-            font-size: 0.85em;
+            font-size: 0.9em;
             letter-spacing: 6px;
             text-transform: uppercase;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             animation: flicker-alerta 3s ease-in-out infinite;
         }
         @keyframes flicker-alerta {
@@ -95,66 +130,29 @@
             82% { opacity: 1; }
         }
 
-        /* Banner */
-        .banner-img {
+        .hero-image {
             width: 100%;
-            max-width: 320px;
+            max-width: 340px;
             height: auto;
-            border-radius: 4px;
-            border: 2px solid rgba(228, 9, 20, 0.4);
-            box-shadow: 0 0 30px rgba(228, 9, 20, 0.2), 0 8px 32px rgba(0,0,0,0.6);
-            margin-bottom: 16px;
-        }
-
-        /* Boton audio */
-        .btn-audio {
-            background: transparent;
-            color: var(--st-amber);
-            border: 1.5px solid var(--st-amber);
-            padding: 14px 16px;
-            cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
-            margin: 12px 0 20px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 0.75em;
-            font-weight: 400;
-            letter-spacing: 2px;
-            text-transform: uppercase;
             border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-        .btn-audio:hover, .btn-audio:active {
-            background: rgba(212, 165, 116, 0.1);
-            box-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
+            border: 2px solid rgba(228, 9, 20, 0.4);
+            box-shadow: 0 0 40px rgba(228, 9, 20, 0.25), 0 8px 40px rgba(0,0,0,0.7);
+            margin-bottom: 24px;
         }
 
-        /* Titulo estilo Stranger Things */
-        h1 {
+        .hero h1 {
             font-family: 'Creepster', cursive;
-            font-size: clamp(2.2em, 10vw, 3em);
+            font-size: clamp(2.5em, 11vw, 3.5em);
             color: var(--st-red);
             letter-spacing: 4px;
             line-height: 1.1;
-            margin: 8px 0 16px;
+            margin-bottom: 6px;
             text-shadow:
                 0 0 10px var(--st-red-glow),
                 0 0 30px var(--st-red-glow),
                 0 0 60px rgba(228, 9, 20, 0.3),
                 0 0 100px rgba(228, 9, 20, 0.15);
             animation: flicker-titulo 5s ease-in-out infinite;
-        }
-        h1 span {
-            display: block;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.35em;
-            color: var(--st-amber);
-            letter-spacing: 12px;
-            margin-top: 4px;
-            text-shadow: none;
         }
         @keyframes flicker-titulo {
             0%, 100% { opacity: 1; text-shadow: 0 0 10px var(--st-red-glow), 0 0 30px var(--st-red-glow), 0 0 60px rgba(228, 9, 20, 0.3); }
@@ -166,36 +164,404 @@
             98% { opacity: 1; }
         }
 
-        /* Aviso portales */
-        .portales-aviso {
-            font-family: 'VT323', monospace;
-            font-size: 1.1em;
-            color: var(--st-red);
-            padding: 12px;
+        .hero-subtitle {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.7em, 3vw, 0.9em);
+            color: var(--st-amber);
+            letter-spacing: 10px;
+            text-transform: uppercase;
             margin-bottom: 20px;
+        }
+
+        .hero-tagline {
+            font-family: 'Special Elite', cursive;
+            font-size: 1.05em;
+            color: #bbb;
+            line-height: 1.7;
+            max-width: 420px;
+            margin: 0 auto 28px;
+        }
+        .hero-tagline strong { color: var(--st-red); }
+
+        .hero-portales-count {
+            font-family: 'VT323', monospace;
+            font-size: 1.15em;
+            color: var(--st-red);
+            padding: 10px 24px;
+            margin-bottom: 28px;
             letter-spacing: 3px;
             border-top: 1px solid rgba(228, 9, 20, 0.3);
             border-bottom: 1px solid rgba(228, 9, 20, 0.3);
             animation: flicker-alerta 4s ease-in-out infinite;
         }
 
-        /* Caja de lore */
-        .lore-box {
-            background: rgba(20, 20, 20, 0.8);
-            border: 1px solid var(--st-gray-dark);
-            border-left: 3px solid var(--st-red);
-            border-radius: 6px;
-            padding: 18px 20px;
-            text-align: left;
+        /* === CTA PRINCIPAL === */
+        .cta-comprar {
+            display: inline-block;
+            padding: 18px 40px;
+            background: var(--st-red);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: clamp(0.85em, 3vw, 1em);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-decoration: none;
+            box-shadow: 0 4px 25px rgba(228, 9, 20, 0.4), 0 0 60px rgba(228, 9, 20, 0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-comprar:hover, .cta-comprar:active {
+            background: #c50812;
+            box-shadow: 0 6px 35px rgba(228, 9, 20, 0.6), 0 0 80px rgba(228, 9, 20, 0.25);
+            transform: translateY(-2px);
+        }
+        .cta-comprar::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+            animation: cta-brillo 3s linear infinite;
+        }
+        @keyframes cta-brillo {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .cta-precio {
+            display: block;
+            font-family: 'VT323', monospace;
+            font-size: 0.8em;
+            color: rgba(255,255,255,0.7);
+            margin-top: 12px;
+            letter-spacing: 2px;
+        }
+
+        .hero-scroll {
+            margin-top: 40px;
+            font-family: 'VT323', monospace;
+            font-size: 0.85em;
+            color: #555;
+            letter-spacing: 3px;
+            animation: scroll-bounce 2s ease-in-out infinite;
+        }
+        .hero-scroll span {
+            display: block;
+            margin-top: 6px;
+            font-size: 1.4em;
+        }
+        @keyframes scroll-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+
+        /* === SEPARADORES === */
+        .seccion-separador {
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--st-red), transparent);
+            margin: 0 auto 16px;
+        }
+
+        .seccion-titulo {
+            font-family: 'Creepster', cursive;
+            font-size: clamp(1.5em, 6vw, 2em);
+            color: var(--st-red);
+            text-align: center;
+            margin-bottom: 6px;
+            text-shadow: 0 0 15px var(--st-red-glow);
+        }
+
+        .seccion-subtitulo {
+            font-family: 'VT323', monospace;
+            color: var(--st-amber);
+            text-align: center;
+            font-size: 1em;
+            letter-spacing: 3px;
+            margin-bottom: 32px;
+        }
+
+        /* === VIDEO SECTION === */
+        .video-section {
+            padding-top: 60px;
+            padding-bottom: 60px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid rgba(228, 9, 20, 0.3);
+            box-shadow: 0 0 40px rgba(228, 9, 20, 0.15), 0 10px 40px rgba(0,0,0,0.5);
+            background: var(--st-dark);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+        }
+
+        /* === RETOS / PORTALES SECTION === */
+        .retos-section {
+            padding-top: 60px;
+            padding-bottom: 40px;
+        }
+
+        .portal-card {
+            background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(20, 20, 20, 0.95));
+            border: 1.5px solid var(--st-gray-dark);
+            border-radius: 12px;
+            padding: 22px 20px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--st-red);
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .portal-card:hover {
+            border-color: rgba(228, 9, 20, 0.5);
+            transform: translateX(4px);
+        }
+        .portal-card:hover::before { opacity: 1; }
+
+        .portal-card-num {
+            font-family: 'Creepster', cursive;
+            font-size: 2em;
+            color: var(--st-red);
+            text-shadow: 0 0 10px var(--st-red-glow);
+            min-width: 36px;
+            text-align: center;
+            line-height: 1;
+            padding-top: 2px;
+        }
+
+        .portal-card-body { flex: 1; }
+
+        .portal-card-nombre {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78em;
+            color: var(--st-white);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .portal-card-desc {
             font-family: 'Special Elite', cursive;
-            font-size: 0.95em;
-            line-height: 1.7;
+            font-size: 0.88em;
+            color: #999;
+            line-height: 1.6;
+        }
+
+        .portal-card-tipo {
+            font-family: 'VT323', monospace;
+            font-size: 0.85em;
+            color: var(--st-amber);
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        /* Color accents por portal */
+        .portal-card[data-portal="1"]::before { background: #e40914; }
+        .portal-card[data-portal="2"]::before { background: #b44dff; }
+        .portal-card[data-portal="3"]::before { background: #00d4ff; }
+        .portal-card[data-portal="4"]::before { background: #ffd700; }
+        .portal-card[data-portal="5"]::before { background: #dc143c; }
+        .portal-card[data-portal="6"]::before { background: #2196f3; }
+        .portal-card[data-portal="7"]::before { background: #ff1744; }
+
+        .portal-card[data-portal="1"] .portal-card-num { color: #e40914; text-shadow: 0 0 10px rgba(228,9,20,0.5); }
+        .portal-card[data-portal="2"] .portal-card-num { color: #b44dff; text-shadow: 0 0 10px rgba(180,77,255,0.5); }
+        .portal-card[data-portal="3"] .portal-card-num { color: #00d4ff; text-shadow: 0 0 10px rgba(0,212,255,0.5); }
+        .portal-card[data-portal="4"] .portal-card-num { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .portal-card[data-portal="5"] .portal-card-num { color: #dc143c; text-shadow: 0 0 10px rgba(220,20,60,0.5); }
+        .portal-card[data-portal="6"] .portal-card-num { color: #2196f3; text-shadow: 0 0 10px rgba(33,150,243,0.5); }
+        .portal-card[data-portal="7"] .portal-card-num { color: #ff1744; text-shadow: 0 0 10px rgba(255,23,68,0.5); }
+
+        /* === FEATURES SECTION === */
+        .features-section {
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .feature-card {
+            background: var(--st-surface);
+            border: 1px solid var(--st-gray-dark);
+            border-radius: 10px;
+            padding: 20px 16px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        .feature-card:hover { border-color: rgba(228, 9, 20, 0.4); }
+
+        .feature-icon {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .feature-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65em;
+            color: var(--st-amber);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .feature-desc {
+            font-family: 'Special Elite', cursive;
+            font-size: 0.82em;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        /* === COMO FUNCIONA SECTION === */
+        .como-section {
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+
+        .paso-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(26, 26, 26, 0.6);
+            border-radius: 10px;
+            border-left: 3px solid var(--st-red);
+        }
+
+        .paso-num {
+            font-family: 'Creepster', cursive;
+            font-size: 1.8em;
+            color: var(--st-red);
+            min-width: 30px;
+            text-align: center;
+            text-shadow: 0 0 10px var(--st-red-glow);
+        }
+
+        .paso-texto {
+            font-family: 'Special Elite', cursive;
             color: #bbb;
+            font-size: 0.92em;
+            line-height: 1.6;
+        }
+        .paso-texto strong { color: var(--st-white); }
+
+        /* === CTA SECTION FINAL === */
+        .cta-section {
+            padding-top: 60px;
+            padding-bottom: 60px;
+            text-align: center;
+        }
+
+        .cta-box {
+            background: linear-gradient(145deg, rgba(228, 9, 20, 0.08), rgba(20, 20, 20, 0.95));
+            border: 2px solid rgba(228, 9, 20, 0.3);
+            border-radius: 14px;
+            padding: 36px 24px;
+            box-shadow: 0 0 50px rgba(228, 9, 20, 0.1);
+        }
+
+        .cta-box-title {
+            font-family: 'Creepster', cursive;
+            font-size: clamp(1.3em, 5vw, 1.7em);
+            color: var(--st-red);
+            margin-bottom: 12px;
+            text-shadow: 0 0 15px var(--st-red-glow);
+        }
+
+        .cta-box-desc {
+            font-family: 'Special Elite', cursive;
+            color: #999;
+            font-size: 0.92em;
+            line-height: 1.6;
             margin-bottom: 24px;
         }
-        .lore-box strong { color: var(--st-red); }
 
-        /* Caja de acceso */
+        .cta-features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+            text-align: left;
+        }
+        .cta-features-list li {
+            font-family: 'VT323', monospace;
+            color: var(--st-green);
+            font-size: 1em;
+            padding: 6px 0;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.08);
+        }
+        .cta-features-list li::before {
+            content: '\2713  ';
+            color: var(--st-green);
+        }
+
+        /* === AUDIO SECTION === */
+        .audio-section {
+            text-align: center;
+            padding: 30px 20px 10px;
+        }
+
+        .btn-audio {
+            background: transparent;
+            color: var(--st-amber);
+            border: 1.5px solid var(--st-amber);
+            padding: 14px 24px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.72em;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .btn-audio:hover, .btn-audio:active {
+            background: rgba(212, 165, 116, 0.1);
+            box-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
+        }
+
+        /* === SECCION ACCESO (Codigo) === */
+        .acceso-section {
+            padding-top: 50px;
+            padding-bottom: 80px;
+            text-align: center;
+        }
+
         .acceso-box {
             background: var(--st-surface);
             border: 1px solid var(--st-gray-dark);
@@ -205,7 +571,6 @@
         }
         .acceso-box p { font-size: 0.8em; letter-spacing: 1px; }
 
-        /* Input de codigo */
         input[type="text"] {
             width: 100%;
             padding: 16px;
@@ -230,7 +595,6 @@
             letter-spacing: 8px;
         }
 
-        /* Botones */
         .btn-validar {
             display: block;
             width: 100%;
@@ -306,7 +670,6 @@
             animation: flicker-alerta 2s ease-in-out infinite;
         }
 
-        /* Link comprar */
         .link-comprar {
             color: #666;
             text-decoration: none;
@@ -316,13 +679,53 @@
         }
         .link-comprar:hover { color: var(--st-amber); }
 
-        /* Mision en curso */
         .mision-en-curso {
             font-family: 'VT323', monospace;
             color: var(--st-green);
             font-size: 1em;
             letter-spacing: 3px;
             margin-bottom: 16px;
+        }
+
+        /* === Boton Instalar App === */
+        .btn-instalar {
+            display: none;
+            width: 100%;
+            padding: 16px;
+            margin: 20px 0;
+            background: var(--st-surface);
+            border: 2px solid var(--st-green);
+            border-radius: 8px;
+            color: var(--st-green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8em;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-instalar:hover {
+            background: rgba(57, 255, 20, 0.05);
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.25);
+        }
+        .btn-instalar-icono { font-size: 1.2em; margin-right: 8px; }
+
+        .instalado-msg {
+            display: none;
+            padding: 14px;
+            margin: 20px 0;
+            background: rgba(57, 255, 20, 0.05);
+            border: 1.5px solid var(--st-green);
+            border-radius: 8px;
+            color: var(--st-green);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            letter-spacing: 2px;
+            text-align: center;
         }
 
         /* === Modal de Progreso === */
@@ -448,47 +851,6 @@
             margin-top: 4px;
         }
 
-        /* === Boton Instalar App === */
-        .btn-instalar {
-            display: none;
-            width: 100%;
-            padding: 16px;
-            margin: 20px 0;
-            background: var(--st-surface);
-            border: 2px solid var(--st-green);
-            border-radius: 8px;
-            color: var(--st-green);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8em;
-            font-weight: 700;
-            cursor: pointer;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-instalar:hover {
-            background: rgba(57, 255, 20, 0.05);
-            box-shadow: 0 0 30px rgba(57, 255, 20, 0.25);
-        }
-        .btn-instalar-icono { font-size: 1.2em; margin-right: 8px; }
-
-        .instalado-msg {
-            display: none;
-            padding: 14px;
-            margin: 20px 0;
-            background: rgba(57, 255, 20, 0.05);
-            border: 1.5px solid var(--st-green);
-            border-radius: 8px;
-            color: var(--st-green);
-            font-family: 'VT323', monospace;
-            font-size: 1em;
-            letter-spacing: 2px;
-            text-align: center;
-        }
-
         /* === Modal de Instrucciones === */
         .modal-instrucciones {
             display: none;
@@ -598,52 +960,249 @@
             transform: translateY(-1px);
         }
 
-        /* Separador decorativo */
-        .separador {
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--st-red), transparent);
-            margin: 0 auto 20px;
+        /* === FOOTER === */
+        .footer {
+            text-align: center;
+            padding: 30px 20px 40px;
+            border-top: 1px solid rgba(228, 9, 20, 0.15);
         }
+        .footer-text {
+            font-family: 'VT323', monospace;
+            color: #444;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+        .footer-link {
+            color: #555;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .footer-link:hover { color: var(--st-amber); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <p class="alert">Portal Abierto</p>
-        <img src="imagenes/tragantia.jpg" alt="La Tragantia" class="banner-img">
+    <div class="landing-wrapper">
 
-        <audio id="introAudio" src="imagenes/audio1.mp3" preload="auto"></audio>
-        <button class="btn-audio" onclick="playIntro()">Escuchar Informe de la Mision</button>
+        <!-- ========== HERO ========== -->
+        <section class="hero">
+            <p class="hero-badge">Portal Abierto</p>
 
-        <h1>La Tragantia<span>Escape City</span></h1>
+            <img src="imagenes/tragantia.jpg" alt="La Tragantia - Escape City Cazorla" class="hero-image">
 
-        <div class="portales-aviso">7 PORTALES DETECTADOS</div>
+            <h1>La Tragantia</h1>
+            <p class="hero-subtitle">Escape City</p>
 
-        <div class="lore-box">
-            <p>Se han abierto <strong>7 portales</strong> entre el mundo donde habita la Tragantia y Cazorla. Tu mision es encontrar y sellar todas las brechas antes de que sea tarde.</p>
+            <p class="hero-tagline">Un <strong>escape urbano con realidad aumentada</strong> por las calles de Cazorla. Encuentra los 7 portales, resuelve los enigmas y sella las brechas antes de que sea demasiado tarde.</p>
+
+            <div class="hero-portales-count">7 PORTALES DETECTADOS</div>
+
+            <a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="cta-comprar">Reservar Aventura</a>
+            <span class="cta-precio">Disponible en CazorlaTravel.es</span>
+
+            <div class="hero-scroll">
+                DESCUBRE MAS
+                <span>&#8595;</span>
+            </div>
+        </section>
+
+        <!-- ========== VIDEO ========== -->
+        <section class="video-section">
+            <div class="seccion-separador"></div>
+            <h2 class="seccion-titulo">Descubre la Leyenda</h2>
+            <p class="seccion-subtitulo">Mira el trailer</p>
+
+            <div class="video-container">
+                <iframe
+                    src="https://www.youtube.com/embed/65W_9IgWutE?rel=0&modestbranding=1"
+                    title="La Tragantia - Escape City Cazorla - Trailer"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    loading="lazy">
+                </iframe>
+            </div>
+        </section>
+
+        <!-- ========== LOS 7 RETOS ========== -->
+        <section class="retos-section">
+            <div class="seccion-separador"></div>
+            <h2 class="seccion-titulo">Los 7 Portales</h2>
+            <p class="seccion-subtitulo">Retos que deberas superar</p>
+
+            <div class="portal-card" data-portal="1">
+                <div class="portal-card-num">1</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Plaza de la Corredera</div>
+                    <div class="portal-card-desc">El primer portal se abre en el corazon de Cazorla. Usa el radar GPS para localizarlo y comienza tu mision.</div>
+                    <div class="portal-card-tipo">GPS + Radar + 5 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="2">
+                <div class="portal-card-num">2</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Convento de la Merced</div>
+                    <div class="portal-card-desc">Una antigua energia emana de los muros del convento. Descifra las claves ocultas para sellar la brecha.</div>
+                    <div class="portal-card-tipo">GPS + Visor AR + 5 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="3">
+                <div class="portal-card-num">3</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Balcon de Zabaleta</div>
+                    <div class="portal-card-desc">Desde las alturas, la Tragantia observa. Encuentra el portal en el mirador y demuestra tu conocimiento.</div>
+                    <div class="portal-card-tipo">GPS + Visor AR + 5 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="4">
+                <div class="portal-card-num">4</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Puerta de los Deseos</div>
+                    <div class="portal-card-desc">Un lugar donde los deseos se convierten en pruebas. Solo los mas astutos cruzaran esta puerta.</div>
+                    <div class="portal-card-tipo">GPS + Visor AR + 5 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="5">
+                <div class="portal-card-num">5</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Plaza de Santa Maria</div>
+                    <div class="portal-card-desc">La sombra de la criatura acecha la plaza. Responde correctamente antes de que el portal se cierre.</div>
+                    <div class="portal-card-tipo">GPS + Visor AR + 5 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="6">
+                <div class="portal-card-num">6</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Molino Harinero</div>
+                    <div class="portal-card-desc">Junto al rio, las fuerzas oscuras son mas intensas. Un reto mas corto pero no menos peligroso.</div>
+                    <div class="portal-card-tipo">GPS + Visor AR + 4 Preguntas</div>
+                </div>
+            </div>
+
+            <div class="portal-card" data-portal="7">
+                <div class="portal-card-num">7</div>
+                <div class="portal-card-body">
+                    <div class="portal-card-nombre">Puerta Norte del Castillo</div>
+                    <div class="portal-card-desc">La guarida final de la Tragantia. Usa la camara para detectar el portal y sella la ultima brecha para siempre.</div>
+                    <div class="portal-card-tipo">Deteccion IA + Prueba Final</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FEATURES ========== -->
+        <section class="features-section">
+            <div class="seccion-separador"></div>
+            <h2 class="seccion-titulo">La Experiencia</h2>
+            <p class="seccion-subtitulo">Tecnologia inmersiva</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">&#x1F4CD;</span>
+                    <div class="feature-title">GPS en Vivo</div>
+                    <div class="feature-desc">Radar que te guia hasta cada portal con precision</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">&#x1F4F7;</span>
+                    <div class="feature-title">Realidad Aumentada</div>
+                    <div class="feature-desc">Visor AR con la camara de tu movil para ver el mundo oculto</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">&#x1F3A7;</span>
+                    <div class="feature-title">Audio Inmersivo</div>
+                    <div class="feature-desc">Narracion, efectos y sustos para una experiencia completa</div>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">&#x1F9E0;</span>
+                    <div class="feature-title">34 Enigmas</div>
+                    <div class="feature-desc">Preguntas sobre la leyenda, la historia y el entorno</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== COMO FUNCIONA ========== -->
+        <section class="como-section">
+            <div class="seccion-separador"></div>
+            <h2 class="seccion-titulo">Como Funciona</h2>
+            <p class="seccion-subtitulo">3 pasos para empezar</p>
+
+            <div class="paso-item">
+                <div class="paso-num">1</div>
+                <div class="paso-texto"><strong>Reserva tu codigo</strong> en CazorlaTravel.es. Recibiras un codigo de activacion unico por email.</div>
+            </div>
+            <div class="paso-item">
+                <div class="paso-num">2</div>
+                <div class="paso-texto"><strong>Activa la app</strong> con tu codigo. Instala la app en tu movil para jugar sin conexion.</div>
+            </div>
+            <div class="paso-item">
+                <div class="paso-num">3</div>
+                <div class="paso-texto"><strong>Recorre Cazorla</strong> buscando los 7 portales. Sigue el radar GPS, activa el visor AR y responde los enigmas.</div>
+            </div>
+        </section>
+
+        <!-- ========== CTA FINAL ========== -->
+        <section class="cta-section">
+            <div class="cta-box">
+                <h2 class="cta-box-title">Atrévete a Entrar</h2>
+                <p class="cta-box-desc">Vive una experiencia unica recorriendo Cazorla mientras descubres la leyenda de la Tragantia, la criatura mitad mujer, mitad serpiente.</p>
+
+                <ul class="cta-features-list">
+                    <li>7 portales por toda Cazorla</li>
+                    <li>34 enigmas sobre la leyenda</li>
+                    <li>Realidad aumentada y GPS</li>
+                    <li>Audio narrativo inmersivo</li>
+                    <li>Juega a tu ritmo, guarda progreso</li>
+                    <li>Funciona sin conexion (modo offline)</li>
+                </ul>
+
+                <a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="cta-comprar" style="display:block; width:100%;">Reservar Ahora</a>
+            </div>
+        </section>
+
+        <!-- ========== AUDIO ========== -->
+        <div class="audio-section">
+            <audio id="introAudio" src="imagenes/audio1.mp3" preload="auto"></audio>
+            <button class="btn-audio" onclick="playIntro()">Escuchar Informe de la Mision</button>
         </div>
 
-        <!-- Boton Instalar App -->
-        <button class="btn-instalar" id="btnInstalar">
-            <span class="btn-instalar-icono">+</span> INSTALAR APP
-        </button>
-        <div class="instalado-msg" id="msgInstalado">App instalada correctamente</div>
+        <!-- ========== ACCESO CON CODIGO ========== -->
+        <section class="acceso-section">
+            <div class="seccion-separador"></div>
+            <h2 class="seccion-titulo">Acceso a la Mision</h2>
+            <p class="seccion-subtitulo">Introduce tu codigo</p>
 
-        <div class="acceso-box" id="seccion-codigo">
-            <p style="margin-bottom: 4px; color: var(--st-amber);"><strong>CODIGO DE ACTIVACION</strong></p>
-            <input type="text" id="codigo-input" placeholder="- - - -" autocomplete="off">
-            <button class="btn-validar" onclick="validarAcceso()">Iniciar Mision</button>
-            <p style="margin-top: 20px;"><a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="link-comprar">No tienes codigo? Consiguelo aqui</a></p>
-            <p id="error-msg">CODIGO INVALIDO</p>
-        </div>
+            <!-- Boton Instalar App -->
+            <button class="btn-instalar" id="btnInstalar">
+                <span class="btn-instalar-icono">+</span> INSTALAR APP
+            </button>
+            <div class="instalado-msg" id="msgInstalado">App instalada correctamente</div>
 
-        <div class="acceso-box" id="seccion-reanudar" style="display:none;">
-            <p class="mision-en-curso">MISION EN CURSO</p>
-            <button class="btn-validar btn-reanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
-            <button class="btn-progreso" onclick="abrirProgreso()">Ver Progreso de Portales</button>
-            <button class="btn-borrar" onclick="borrarProgreso()">Borrar datos y empezar de cero</button>
-        </div>
-    </div>
+            <div class="acceso-box" id="seccion-codigo">
+                <p style="margin-bottom: 4px; color: var(--st-amber);"><strong>CODIGO DE ACTIVACION</strong></p>
+                <input type="text" id="codigo-input" placeholder="- - - -" autocomplete="off">
+                <button class="btn-validar" onclick="validarAcceso()">Iniciar Mision</button>
+                <p style="margin-top: 20px;"><a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="link-comprar">No tienes codigo? Consiguelo aqui</a></p>
+                <p id="error-msg">CODIGO INVALIDO</p>
+            </div>
+
+            <div class="acceso-box" id="seccion-reanudar" style="display:none;">
+                <p class="mision-en-curso">MISION EN CURSO</p>
+                <button class="btn-validar btn-reanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
+                <button class="btn-progreso" onclick="abrirProgreso()">Ver Progreso de Portales</button>
+                <button class="btn-borrar" onclick="borrarProgreso()">Borrar datos y empezar de cero</button>
+            </div>
+        </section>
+
+        <!-- ========== FOOTER ========== -->
+        <footer class="footer">
+            <p class="footer-text">
+                La Tragantia Escape City &middot; <a href="https://www.cazorlatravel.es" target="_blank" class="footer-link">CazorlaTravel.es</a>
+            </p>
+        </footer>
+
+    </div><!-- /landing-wrapper -->
 
     <!-- Modal de Progreso -->
     <div class="modal-progreso" id="modalProgreso">
