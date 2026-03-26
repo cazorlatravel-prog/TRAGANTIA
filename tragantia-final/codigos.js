@@ -8,6 +8,10 @@
 
 const CODIGOS_VALIDOS = [
     "cazorlanature",
+    "DY87PJMU",
+    "VUX8CW8C",
+    "BRQQF2RQ",
+    "QGJV955M",
     "MKDHMWMN",
     "2MSP4QBR",
     "HES265X8",
