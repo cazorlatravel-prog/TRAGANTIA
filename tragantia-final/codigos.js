@@ -1,13 +1,13 @@
 /**
  * LA TRAGANTÍA - ESCAPE CITY CAZORLA
  * Sistema de Códigos de Activación
- * 
+ *
  * Añade aquí los códigos que generes para tus clientes.
  * Los códigos no distinguen mayúsculas/minúsculas.
  */
 
 const CODIGOS_VALIDOS = [
-    // === CÓDIGOS ACTIVOS ===
+    // === CÓDIGOS ACTIVOS ORIGINALES ===
     "cazorlanature",
     "ab12c3d4",
     "cazorla2525",
@@ -17,14 +17,116 @@ const CODIGOS_VALIDOS = [
     "cazorla9595",
     "cazorla1010",
     "cazorla1515",
-    
+
+    // === LICENCIAS WOOCOMMERCE ===
+    "DY87PJMU",
+    "VUX8CW8C",
+    "BRQQF2RQ",
+    "QGJV955M",
+    "GDK38LDF",
+    "W8FJRB7K",
+    "UJQX3GQ8",
+    "TP2P85KJ",
+    "6XJZQQWZ",
+    "8HPGWZQH",
+    "9RGQ5VJV",
+    "VU6NCXLC",
+    "V627PRR2",
+    "W9ZEU5YS",
+    "H8VVC374",
+    "6EHW8C3P",
+    "5E2ZUTD9",
+    "XUASQASW",
+    "KU2WYF7Y",
+    "94TTQL2J",
+    "7LVD8T5N",
+    "58D6CDL6",
+    "VW438SZT",
+    "GBDVWVC9",
+    "UQLBFZQM",
+    "J2CYW4E8",
+    "GR4JUK46",
+    "BPSZKZES",
+    "GNUYY9K7",
+    "X6J44PHZ",
+    "JAKTNW4",
+    "XZQ6QN9Q",
+    "BK28H6RR",
+    "8FPE99NG",
+    "XVZTLXYD",
+    "LFA5CS28",
+    "B6ZHWDCV",
+    "QUQR2GNG",
+    "SCKDPRZ7",
+    "LG8THKK9",
+    "6L262ZMD",
+    "WXZFMT9S",
+    "CHSLBEG2",
+    "DSWQH6CL",
+    "6HVEN5ST",
+    "DKWPFJW2",
+    "546FT94Q",
+    "B2LRQDAB",
+    "UPXH3RSB",
+    "62FDBF4A",
+    "NE27CRWQ",
+    "CRCT8NYU",
+    "S5F7TQ9T",
+    "TB6Y7FFR",
+    "XPAH4MQ6",
+    "HW25TW27",
+    "3WTJ654B",
+    "JH35PXWM",
+    "XNS6EM4U",
+    "PJURWR7W",
+    "CY52PNUP",
+    "Z5TTY492",
+    "XHC3Y9VL",
+    "N2XQZH6Q",
+    "WZKKQGY9",
+    "EHNC2WZR",
+    "ZUTPNEES",
+    "ER4R3L87",
+    "SZCZ3FPE",
+    "PYD5DY7F",
+    "SJ7CKA4T",
+    "DBPRKLZM",
+    "6LW4XSS8",
+    "RQ2YDSPS",
+    "4EZR2FYF",
+    "QUGF33MS",
+    "F6UNUBMD",
+    "QTVDLGM2",
+    "UVRU3PX4",
+    "UMBFXDUA",
+    "ETFMFD7S",
+    "37VXNNEX",
+    "R6V7VNSU",
+    "FC53VPZ5",
+    "DCQR4B5C",
+    "PQTMSGYW",
+    "2XJ2JV95",
+    "6A5PQR6U",
+    "CUL7P65C",
+    "AVS73FZS",
+    "CCSW8N5Q",
+    "29DF8ETY",
+    "LTCHTYN9",
+    "2XL3B2EV",
+    "87QWYNMG",
+    "KF5YV8N8",
+    "H5MTGKD3",
+    "7EYCHBL9",
+    "EHBN3ETT",
+    "W4Y8M5DZ",
+
     // === CÓDIGOS DE PRUEBA (eliminar en producción) ===
     "123",
 ];
 
 /**
  * INSTRUCCIONES PARA AÑADIR NUEVOS CÓDIGOS:
- * 
+ *
  * 1. Añade el código entre comillas en el array CODIGOS_VALIDOS
  * 2. Separa cada código con una coma
  * 3. Los códigos no distinguen mayúsculas/minúsculas
