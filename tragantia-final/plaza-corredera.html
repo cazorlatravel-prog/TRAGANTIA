@@ -269,6 +269,23 @@
         .btn-cerrar-puntuacion { width: 100%; margin-top: 16px; padding: 12px; background: transparent; border: 1px solid var(--st-gray-dark); border-radius: 8px; color: var(--st-gray); font-family: 'Orbitron', sans-serif; font-size: 0.7em; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
         .btn-cerrar-puntuacion:hover { border-color: var(--accent); color: var(--accent); }
 
+        /* === MEJORAS UX: rumbo, tendencia, GPS, reanudar === */
+        .info-navegacion { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 4px; }
+        .rumbo-indicador { display: flex; align-items: center; gap: 6px; font-family: 'VT323', monospace; font-size: 0.95em; color: var(--st-amber); letter-spacing: 2px; }
+        .rumbo-flecha { display: inline-block; font-size: 1.25em; color: var(--accent); transition: transform 0.6s ease; text-shadow: 0 0 8px var(--accent-glow); }
+        .tendencia-distancia { font-family: 'VT323', monospace; font-size: 0.95em; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
+        .tendencia-distancia.acercando { color: var(--st-green); opacity: 1; }
+        .tendencia-distancia.alejando { color: #ff5252; opacity: 1; }
+        .precision-gps { font-family: 'VT323', monospace; font-size: 0.75em; color: var(--st-gray); letter-spacing: 2px; margin-top: 6px; }
+        .precision-gps.mala { color: #ff5252; }
+        .mensaje-gps { display: none; font-family: 'VT323', monospace; font-size: 0.85em; color: #ff5252; text-align: center; margin-top: 8px; padding: 8px 14px; border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; max-width: 320px; }
+        .aviso-reanudar { display: none; margin-top: 14px; padding: 14px 18px; background: rgba(57,255,20,0.05); border: 1px solid var(--st-green); border-radius: 8px; text-align: center; }
+        .aviso-reanudar p { font-family: 'VT323', monospace; color: var(--st-green); font-size: 0.9em; letter-spacing: 1px; margin-bottom: 10px; }
+        .btn-reanudar-quiz { padding: 12px 26px; background: var(--st-green); border: none; border-radius: 6px; color: var(--st-black); font-family: 'Orbitron', sans-serif; font-size: 0.7em; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
+        .delta-puntos { position: fixed; top: 54px; right: 24px; z-index: 181; font-family: 'VT323', monospace; font-size: 1.4em; pointer-events: none; opacity: 0; }
+        .delta-puntos.animar { animation: delta-sube 1.2s ease-out; }
+        @keyframes delta-sube { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-32px); } }
+
         /* Flicker animation */
         @keyframes st-flicker {
             0%, 100% { opacity: 1; } 41% { opacity: 1; } 42% { opacity: 0.4; } 43% { opacity: 1; }
@@ -326,7 +343,8 @@
     <button class="btn-puntuacion-flotante" id="btnPuntuacionFlotante" onclick="abrirModalPuntuacion()">
         <span class="icono-estrella">⭐</span> <span id="puntosFlotante">0</span> PTS
     </button>
-    
+    <div class="delta-puntos" id="deltaPuntos"></div>
+
     <!-- Modal de puntuación -->
     <div class="modal-puntuacion" id="modalPuntuacion">
         <div class="modal-puntuacion-contenido">
@@ -394,6 +412,13 @@
             <p class="valor-distancia"><span id="valorMetros">---</span><span> m</span></p>
         </div>
 
+        <div class="info-navegacion">
+            <div class="rumbo-indicador"><span class="rumbo-flecha" id="rumboFlecha">➤</span><span id="rumboTexto">--</span></div>
+            <div class="tendencia-distancia" id="tendenciaDistancia"></div>
+        </div>
+        <p class="precision-gps" id="precisionGps">PRECISIÓN GPS: --</p>
+        <p class="mensaje-gps" id="mensajeGps"></p>
+
         <div class="instruccion-busqueda">
             <p class="buscar-texto">🔍 Buscar Objetivo</p>
             <p class="objetivo-texto">Plaza de la Corredera</p>
@@ -402,7 +427,12 @@
         <button class="btn-iniciar" id="btnIniciar">
             ACTIVAR BÚSQUEDA SIGUIENTE PORTAL
         </button>
-        
+
+        <div class="aviso-reanudar" id="avisoReanudar">
+            <p>⚠ RITUAL INTERRUMPIDO DETECTADO</p>
+            <button class="btn-reanudar-quiz" onclick="reanudarQuizGuardado()">Continuar donde lo dejaste</button>
+        </div>
+
         <!-- Botón modo desarrollo (solo visible con ?dev=true) -->
     </div>
 
@@ -575,6 +605,102 @@
         let intervaloTimer = null;
         let segundosTranscurridos = 0;
 
+        // Variables para las mejoras UX
+        let wakeLock = null;
+        let distanciaAnterior = null;
+        const CLAVE_ESTADO_QUIZ = 'tragantia_portal1_quiz';
+
+        // === VIBRACIÓN HÁPTICA ===
+        function vibrar(patron) { if (navigator.vibrate) { try { navigator.vibrate(patron); } catch (e) {} } }
+
+        // === WAKE LOCK: mantener pantalla encendida durante la misión ===
+        async function solicitarWakeLock() {
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                solicitarWakeLock();
+                if (estado.visorActivo) elementos.audioAmbiente.play().catch(() => {});
+            } else {
+                elementos.audioAmbiente.pause();
+            }
+        });
+
+        // === LIMPIEZA DE RECURSOS AL SALIR ===
+        window.addEventListener('pagehide', () => {
+            detenerPitidos();
+            if (estado.watchId !== null) navigator.geolocation.clearWatch(estado.watchId);
+            if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(t => t.stop());
+            if (wakeLock) { try { wakeLock.release(); } catch (e) {} }
+        });
+
+        // === RUMBO HACIA EL DESTINO ===
+        function calcularRumbo(lat1, lng1, lat2, lng2) {
+            const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
+            const dl = (lng2 - lng1) * Math.PI / 180;
+            const y = Math.sin(dl) * Math.cos(f2);
+            const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+        function actualizarRumbo(lat, lng) {
+            const rumbo = calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng);
+            const cardinales = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+            document.getElementById('rumboTexto').textContent = cardinales[Math.round(rumbo / 45) % 8] + ' ' + Math.round(rumbo) + '°';
+            document.getElementById('rumboFlecha').style.transform = 'rotate(' + (rumbo - 90) + 'deg)';
+        }
+        function actualizarTendencia(distancia) {
+            const el = document.getElementById('tendenciaDistancia');
+            if (distanciaAnterior !== null && Math.abs(distancia - distanciaAnterior) > 2) {
+                if (distancia < distanciaAnterior) { el.textContent = '▼ TE ACERCAS'; el.className = 'tendencia-distancia acercando'; }
+                else { el.textContent = '▲ TE ALEJAS'; el.className = 'tendencia-distancia alejando'; }
+            }
+            distanciaAnterior = distancia;
+        }
+
+        // === ANIMACIÓN DE PUNTOS GANADOS/PERDIDOS ===
+        function mostrarDeltaPuntos(texto, color) {
+            const el = document.getElementById('deltaPuntos');
+            el.textContent = texto;
+            el.style.color = color;
+            el.classList.remove('animar');
+            void el.offsetWidth;
+            el.classList.add('animar');
+        }
+
+        // === PERSISTENCIA DEL QUIZ (reanudar si se cierra a mitad) ===
+        function guardarEstadoQuiz() {
+            try {
+                localStorage.setItem(CLAVE_ESTADO_QUIZ, JSON.stringify({
+                    preguntaActual: estado.preguntaActual,
+                    puntuacionTotal: estado.puntuacionTotal,
+                    respuestasCorrectas: estado.respuestasCorrectas,
+                    respuestasIncorrectas: estado.respuestasIncorrectas,
+                    bonusTotal: estado.bonusTotal,
+                    segundos: segundosTranscurridos
+                }));
+            } catch (e) {}
+        }
+        function reanudarQuizGuardado() {
+            let guardado = null;
+            try { guardado = JSON.parse(localStorage.getItem(CLAVE_ESTADO_QUIZ) || 'null'); } catch (e) {}
+            if (!guardado) return;
+            estado.preguntaActual = guardado.preguntaActual || 0;
+            estado.puntuacionTotal = guardado.puntuacionTotal || 0;
+            estado.respuestasCorrectas = guardado.respuestasCorrectas || 0;
+            estado.respuestasIncorrectas = guardado.respuestasIncorrectas || 0;
+            estado.bonusTotal = guardado.bonusTotal || 0;
+            segundosTranscurridos = guardado.segundos || 0;
+            document.getElementById('avisoReanudar').style.display = 'none';
+            elementos.pantallaRadar.style.display = 'none';
+            elementos.modalQuiz.style.display = 'block';
+            actualizarDisplayTimer();
+            if (intervaloTimer) clearInterval(intervaloTimer);
+            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000);
+            actualizarPuntosFlotante();
+            solicitarWakeLock();
+            cargarPregunta();
+        }
+
         // === ELEMENTOS DOM ===
         const elementos = {
             pantallaRadar: document.getElementById('pantallaRadar'),
@@ -632,9 +758,15 @@
             
             // Intentar cargar mapa
             inicializarMapa();
-            
+
             // Actualizar puntos
             actualizarPuntosFlotante();
+
+            // Detectar quiz interrumpido para ofrecer reanudación
+            const portalCompletado = localStorage.getItem('tragantia_portal1_completado') === 'true';
+            if (!portalCompletado && localStorage.getItem(CLAVE_ESTADO_QUIZ)) {
+                document.getElementById('avisoReanudar').style.display = 'block';
+            }
         });
 
         // === MAPA HÍBRIDO ===
@@ -758,6 +890,9 @@
             elementos.audioPitido.play().then(() => elementos.audioPitido.pause()).catch(() => {});
             elementos.audioNarrativo.play().then(() => { elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; }).catch(() => {});
 
+            // Mantener la pantalla encendida (requiere gesto de usuario)
+            solicitarWakeLock();
+
             if (navigator.geolocation) {
                 elementos.btnIniciar.disabled = true;
                 elementos.btnIniciar.innerHTML = '📡 Rastreando Señal...';
@@ -774,7 +909,7 @@
 
         // === ACTUALIZAR POSICIÓN ===
         function actualizarPosicion(posicion) {
-            const { latitude, longitude } = posicion.coords;
+            const { latitude, longitude, accuracy } = posicion.coords;
             const distancia = calcularDistancia(
                 latitude, longitude,
                 CONFIG.destino.lat, CONFIG.destino.lng
@@ -785,25 +920,46 @@
 
             // Actualizar punto en el radar (simulado)
             actualizarRadar(distancia);
-            
+
             // Actualizar mapa si está disponible
             actualizarMapa(latitude, longitude);
 
             // Actualizar sistema de pitidos
             actualizarSistemaPitidos(distancia);
 
+            // Actualizar rumbo y tendencia de distancia
+            actualizarRumbo(latitude, longitude);
+            actualizarTendencia(distancia);
+
+            // Mostrar precisión GPS
+            const elPrecision = document.getElementById('precisionGps');
+            elPrecision.textContent = 'PRECISIÓN GPS: ±' + Math.round(accuracy) + 'm';
+            elPrecision.classList.toggle('mala', accuracy > 35);
+            document.getElementById('mensajeGps').style.display = 'none';
+
             // Comprobar si está en el radio
             if (distancia <= CONFIG.destino.radio && !estado.visorActivo) {
                 detenerPitidos();
+                vibrar([100, 60, 100, 60, 300]);
                 activarVisor();
             }
         }
 
         function errorGPS(error) {
             console.error('Error GPS:', error);
-            elementos.btnIniciar.disabled = false;
-            elementos.btnIniciar.innerHTML = '📡 Reintentar';
-            detenerPitidos();
+            const textos = {
+                1: '⚠ PERMISO DE UBICACIÓN DENEGADO. Actívalo en los ajustes del navegador y reintenta.',
+                2: '⚠ SEÑAL GPS NO DISPONIBLE. Muévete a cielo abierto.',
+                3: '⚠ EL GPS TARDA EN RESPONDER. Buscando señal...'
+            };
+            const msg = document.getElementById('mensajeGps');
+            msg.textContent = textos[error.code] || '⚠ ERROR DE GPS. Reintenta.';
+            msg.style.display = 'block';
+            if (error.code === 1) {
+                elementos.btnIniciar.disabled = false;
+                elementos.btnIniciar.innerHTML = '📡 Reintentar';
+                detenerPitidos();
+            }
         }
 
         // === ACTUALIZAR RADAR VISUAL ===
@@ -1000,7 +1156,8 @@
         function ejecutarSusto() {
             // No ejecutar sustos durante la narración
             if (estado.narracionActiva) return;
-            
+
+            vibrar([80, 40, 200]);
             elementos.efectoSusto.classList.add('activo');
             elementos.audioSusto.currentTime = 0;
             elementos.audioSusto.volume = 0.6;
@@ -1020,6 +1177,7 @@
             elementos.modalQuiz.style.display = 'block';
             estado.tiempoInicioPregunta = Date.now();
             iniciarTimerQuiz();
+            guardarEstadoQuiz();
             cargarPregunta();
         });
 
@@ -1095,7 +1253,8 @@
 
             if (index === pregunta.correcta) {
                 botones[index].classList.add('correcta');
-                
+                vibrar(60);
+
                 // Calcular puntos - Se premia más ACERTAR que la rapidez
                 let puntos = 100;  // Puntos base por acertar
                 let bonus = 0;
@@ -1111,11 +1270,13 @@
                 
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (+' + (puntos + bonus) + ')';
                 actualizarPuntosFlotante();
-                
+                mostrarDeltaPuntos('+' + (puntos + bonus), '#39ff14');
+
                 setTimeout(() => {
                     estado.preguntaActual++;
                     estado.procesandoRespuesta = false;  // Desbloquear
-                    
+                    guardarEstadoQuiz();
+
                     if (estado.preguntaActual >= CONFIG.preguntas.length) {
                         clearInterval(intervaloTimer);
                         mostrarExito();
@@ -1125,13 +1286,16 @@
                 }, 800);
             } else {
                 botones[index].classList.add('incorrecta');
-                
+                vibrar([250]);
+
                 // Penalización
                 estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - 25);
                 estado.respuestasIncorrectas++;
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-25)';
                 actualizarPuntosFlotante();
-                
+                mostrarDeltaPuntos('-25', '#ff5252');
+                guardarEstadoQuiz();
+
                 // Sonido de error
                 ejecutarSusto();
 
@@ -1172,7 +1336,11 @@
             
             // Actualizar progreso al siguiente portal
             localStorage.setItem('tragantia_progreso', 'convento-merced.html');
-            
+
+            // Limpiar estado del quiz guardado y vibrar en señal de éxito
+            localStorage.removeItem(CLAVE_ESTADO_QUIZ);
+            vibrar([80, 50, 80, 50, 200]);
+
             // Mostrar puntos en pantalla de éxito
             elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + estado.puntuacionTotal + ' (+50 bonus portal)';
             

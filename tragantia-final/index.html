@@ -671,6 +671,44 @@
             margin-bottom: 16px;
         }
 
+        /* Resumen de progreso en la caja de reanudar */
+        .resumen-progreso {
+            font-family: 'VT323', monospace;
+            color: var(--st-amber);
+            font-size: 0.95em;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+        .barra-progreso-mision {
+            width: 100%;
+            height: 8px;
+            background: var(--st-gray-dark, #333);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .barra-progreso-mision-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--st-green), #7dff5e);
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+            transition: width 0.8s ease;
+        }
+
+        /* Animación de error en el input de código */
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        #codigo-input.error {
+            border-color: var(--st-red) !important;
+            animation: shake-error 0.4s ease;
+        }
+
         /* === Boton Instalar App FIJO === */
         .btn-instalar-wrapper {
             position: fixed;
@@ -1239,6 +1277,8 @@
 
             <div class="acceso-box" id="seccion-reanudar" style="display:none;">
                 <p class="mision-en-curso">MISION EN CURSO</p>
+                <p class="resumen-progreso" id="resumenProgreso"></p>
+                <div class="barra-progreso-mision"><div class="barra-progreso-mision-fill" id="barraProgresoFill"></div></div>
                 <button class="btn-validar btn-reanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
                 <button class="btn-progreso" onclick="abrirProgreso()">Ver Progreso de Portales</button>
                 <button class="btn-borrar" onclick="borrarProgreso()">Borrar datos y empezar de cero</button>
@@ -1331,8 +1371,29 @@
             if (progreso) {
                 document.getElementById('seccion-codigo').style.display = 'none';
                 document.getElementById('seccion-reanudar').style.display = 'block';
+                mostrarResumenProgreso();
             }
+
+            // Validar código con la tecla Enter y limpiar error al escribir
+            const inputCodigo = document.getElementById('codigo-input');
+            inputCodigo.addEventListener('keydown', e => { if (e.key === 'Enter') validarAcceso(); });
+            inputCodigo.addEventListener('input', () => {
+                inputCodigo.classList.remove('error');
+                document.getElementById('error-msg').style.display = 'none';
+            });
         };
+
+        function mostrarResumenProgreso() {
+            let sellados = 0, puntos = 0;
+            for (let i = 1; i <= 7; i++) {
+                if (localStorage.getItem('tragantia_portal' + i + '_completado') === 'true') {
+                    sellados++;
+                    puntos += parseInt(localStorage.getItem('tragantia_portal' + i + '_puntos') || '0');
+                }
+            }
+            document.getElementById('resumenProgreso').textContent = 'PORTALES SELLADOS: ' + sellados + '/7 · ' + puntos + ' PTS';
+            document.getElementById('barraProgresoFill').style.width = Math.round(sellados / 7 * 100) + '%';
+        }
 
         function playIntro() {
             const audio = document.getElementById('introAudio');
@@ -1345,8 +1406,16 @@
             const codigosLower = CODIGOS_VALIDOS.map(c => c.toLowerCase());
             if (typeof CODIGOS_VALIDOS !== 'undefined' && codigosLower.includes(input)) {
                 localStorage.setItem('tragantia_auth', 'true');
+                if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
                 abrirInstrucciones();
-            } else { document.getElementById('error-msg').style.display = 'block'; }
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+                const inputEl = document.getElementById('codigo-input');
+                inputEl.classList.remove('error');
+                void inputEl.offsetWidth;
+                inputEl.classList.add('error');
+                if (navigator.vibrate) { try { navigator.vibrate([80, 40, 80]); } catch (e) {} }
+            }
         }
 
         function abrirInstrucciones() {
