@@ -328,7 +328,7 @@
         }).catch(() => { enviando = false; });
     }
     function enviarAlSalir() {
-        if (!ESTADISTICAS_URL || !navigator.sendBeacon) return;
+        if (!ESTADISTICAS_URL || !navigator.sendBeacon || enviando) return;
         const cola = leerJSON('tragantia_eventos_pendientes', []);
         if (!cola.length) return;
         const lote = cola.slice(0, 50);
@@ -501,17 +501,24 @@
 
     function iniciarBusqueda() {
         escribir(clavePortal('busqueda'), Date.now().toString());
+        // El tiempo de misión cuenta desde que se empieza a buscar el primer portal,
+        // no desde que se valida el código (puede hacerse en casa el día anterior).
+        if (portalActual === 1 && !portalesCompletados().length) escribir('tragantia_inicio_partida', Date.now().toString());
         evento('busqueda_inicio');
     }
 
     // Zona propia del portal: la mitad de la distancia al portal más cercano menos 5 m, para que
     // las zonas de dos portales vecinos nunca se toquen (el 3 y el 4 están a solo 56 m).
     // Las coordenadas de PORTALES deben coincidir con CONFIG.destino de cada portal.
+    const zonasCalculadas = {};
     function zonaPropia(num) {
         const p = PORTALES[num - 1];
         if (!p) return 40;
-        const vecino = Math.min.apply(null, PORTALES.filter(o => o.num !== num).map(o => distanciaMetros(p.lat, p.lng, o.lat, o.lng)));
-        return vecino / 2 - 5;
+        if (!zonasCalculadas[num]) {
+            const vecino = Math.min.apply(null, PORTALES.filter(o => o.num !== num).map(o => distanciaMetros(p.lat, p.lng, o.lat, o.lng)));
+            zonasCalculadas[num] = vecino / 2 - 5;
+        }
+        return zonasCalculadas[num];
     }
     function distanciaMetros(lat1, lng1, lat2, lng2) {
         const R = 6371e3, f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
@@ -527,15 +534,29 @@
         return Math.max(radio, Math.min(ampliado, zonaPropia(portalActual)));
     }
 
-    // Si el jugador lleva 20 s cerca (40 m, o menos si hay otro portal próximo) sin que el GPS
-    // lo detecte, se le ofrece entrar a mano.
+    // Entrada a mano cuando el GPS no detecta la llegada. Requiere confirmación del jugador,
+    // así que su umbral puede superar la zona automática (hasta 12 m más, máx. 40 m) sin
+    // riesgo de entrar solo en el portal equivocado; entre los portales 3 y 4 queda en 35 m.
+    // Se ofrece tras 20 s cerca o, si el GPS no da ninguna posición, tras 45 s de búsqueda.
     let cercaDesde = null;
+    function umbralManual() { return Math.min(40, zonaPropia(portalActual) + 12); }
     function vigilarLlegada(distancia, alConfirmar) {
         const caja = asegurarLlegadaManual(alConfirmar);
         if (!caja) return;
-        if (distancia > Math.min(40, zonaPropia(portalActual))) { cercaDesde = null; caja.classList.remove('visible'); return; }
+        const texto = caja.querySelector('p');
+        if (distancia === null || distancia === undefined) {
+            const inicio = parseInt(leer(clavePortal('busqueda'), '0'), 10);
+            if (inicio && Date.now() - inicio > 45000 && !caja.classList.contains('visible')) {
+                texto.textContent = 'El GPS no responde. Si ya estás en el lugar, puedes entrar a mano.';
+                caja.classList.add('visible');
+                vibrar(40);
+            }
+            return;
+        }
+        if (distancia > umbralManual()) { cercaDesde = null; caja.classList.remove('visible'); return; }
         if (cercaDesde === null) cercaDesde = Date.now();
         if (Date.now() - cercaDesde > 20000 && !caja.classList.contains('visible')) {
+            texto.textContent = '¿Ya estás en el lugar y el radar no te detecta? El GPS falla entre edificios.';
             caja.classList.add('visible');
             vibrar(40);
         }

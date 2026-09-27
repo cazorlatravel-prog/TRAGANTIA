@@ -1607,8 +1607,8 @@
 
         function validarAcceso() {
             const input = document.getElementById('codigo-input').value.replace(/\s+/g, '').toLowerCase();
-            const codigosLower = CODIGOS_VALIDOS.map(c => c.toLowerCase());
-            if (typeof CODIGOS_VALIDOS !== 'undefined' && codigosLower.includes(input)) {
+            const codigosLower = typeof CODIGOS_VALIDOS !== 'undefined' ? CODIGOS_VALIDOS.map(c => c.toLowerCase()) : [];
+            if (codigosLower.includes(input)) {
                 // Partida nueva: limpia reliquias, logros y puntos de una partida anterior
                 Juego.nuevaPartida();
                 localStorage.setItem('tragantia_auth', 'true');

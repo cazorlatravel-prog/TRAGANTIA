@@ -360,7 +360,7 @@
                 <div class="penta-ring"></div>
                 <div class="penta-ring"></div>
                 <div class="radar-sweep-penta"></div>
-                <div class="punto-objetivo"></div>
+                <div class="punto-objetivo" id="puntoObjetivo"></div>
                 <div class="punto-centro"></div>
             </div>
         </div>
@@ -753,6 +753,7 @@
             const msg = document.getElementById('mensajeGps');
             msg.textContent = textos[error.code] || '⚠ ERROR DE GPS. Reintenta.';
             msg.style.display = 'block';
+            if (error.code !== 1 && !estado.visorActivo) Juego.vigilarLlegada(null, () => { detenerPitidos(); activarVisor(); });
             if (error.code === 1) {
                 elementos.btnIniciar.disabled = false;
                 elementos.btnIniciar.innerHTML = '✦ Reintentar';
