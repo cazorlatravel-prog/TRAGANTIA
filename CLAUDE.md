@@ -189,7 +189,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | `Juego.iniciarPortal(N)` | Right after saving `tragantia_progreso` (adds the 🎒 relic bag button) |
 | `Juego.brujula.activar()` + `Juego.iniciarBusqueda()` | Inside the "Activar búsqueda" click (iOS compass permission needs the gesture) |
 | `Juego.brujula.fijarRumbo(rumbo, distancia)` | `actualizarRumbo()`; draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) and places `#puntoObjetivo` on the radar at the real bearing (north-up, like the map) |
-| `Juego.radioEfectivo(radio, accuracy)` + `Juego.vigilarLlegada(distancia, alConfirmar)` | Arrival check in `actualizarPosicion()`: radius grows with GPS accuracy (max +15 m); after 20 s within 40 m a manual "Estoy frente al portal" button appears |
+| `Juego.radioEfectivo(radio, accuracy)` + `Juego.vigilarLlegada(distancia, alConfirmar)` | Arrival check in `actualizarPosicion()`: radius grows with GPS accuracy (max +15 m); after 20 s nearby (40 m) a manual "Estoy frente al portal" button appears. Both are capped by the portal's own zone (`Juego.zonaPropia(N)` = half the distance to the nearest portal − 5 m) so neighbouring portals never overlap (portals 3 and 4 are only 56 m apart → 23 m zones). **`PORTALES` in `juego.js` keeps a copy of each portal's `lat`/`lng`: if you move a portal, update both `CONFIG.destino` and `juego.js`.** |
 | `Juego.marcarLlegada()` / `Juego.guardarFase('narrativa')` | `activarVisor()` / `finalizarNarracion()` |
 | `Juego.prepararReanudacion(total, reanudarQuizGuardado, reanudarEnPortal)` | On `DOMContentLoaded`; fills and shows `#avisoReanudar` |
 | `Juego.prepararPista(i, pregunta, elementos.quizContenido, aplicarCostePista)` | End of `cargarPregunta()`; hint costs 30 pts, needs ≥30 pts in the portal, removes one wrong option |
@@ -270,7 +270,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 ## Common Development Tasks
 
 ### Modifying a portal's questions or coordinates
-Edit the `CONFIG` object at the top of the portal's `<script>` section. Change `destino.lat`, `destino.lng`, `destino.radio`, or the `preguntas` array.
+Edit the `CONFIG` object at the top of the portal's `<script>` section. Change `destino.lat`, `destino.lng`, `destino.radio`, or the `preguntas` array. If you change `lat`/`lng`, copy them to the same portal in `PORTALES` of `juego.js` (used to keep arrival zones of nearby portals from overlapping).
 
 ### Adding new activation codes
 1. Add the new code string to the `CODIGOS_VALIDOS` array in `codigos.js`

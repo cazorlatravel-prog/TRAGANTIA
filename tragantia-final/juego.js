@@ -19,19 +19,19 @@
     const MAX_EVENTOS_COLA = 300;
 
     const PORTALES = [
-        { num: 1, nombre: 'Plaza de la Corredera', archivo: 'plaza-corredera.html', preguntas: 5,
+        { num: 1, nombre: 'Plaza de la Corredera', archivo: 'plaza-corredera.html', lat: 37.91133950989168, lng: -3.0026778535239935, preguntas: 5,
           reliquia: { icono: '🔔', nombre: 'Campana del Pregonero', descripcion: 'Aún guarda el eco de los pregones del mercado medieval. La Tragantía coleccionaba voces... esta ya nunca será suya.' } },
-        { num: 2, nombre: 'Convento de la Merced', archivo: 'convento-merced.html', preguntas: 5,
+        { num: 2, nombre: 'Convento de la Merced', archivo: 'convento-merced.html', lat: 37.91065543355946, lng: -3.0019816256567036, preguntas: 5,
           reliquia: { icono: '📿', nombre: 'Rosario Mercedario', descripcion: 'Cuentas gastadas por siglos de súplicas por los cautivos que nunca volvieron.' } },
-        { num: 3, nombre: 'Balcón de Zabaleta', archivo: 'balcon-zabaleta.html', preguntas: 5,
+        { num: 3, nombre: 'Balcón de Zabaleta', archivo: 'balcon-zabaleta.html', lat: 37.90986671584129, lng: -3.0016041666216857, preguntas: 5,
           reliquia: { icono: '🌿', nombre: 'Hiedra de la Torre', descripcion: 'Arrancada de la ventana desde la que ella espera, cada noche, el regreso de su padre.' } },
-        { num: 4, nombre: 'Puerta de los Deseos', archivo: 'puerta-deseos.html', preguntas: 5,
+        { num: 4, nombre: 'Puerta de los Deseos', archivo: 'puerta-deseos.html', lat: 37.909739359534434, lng: -3.0009837979155507, preguntas: 5,
           reliquia: { icono: '🗝️', nombre: 'Llave de los Deseos', descripcion: 'Abría la antigua ermita. Tres siglos de deseos susurrados laten todavía en su hierro.' } },
-        { num: 5, nombre: 'Plaza de Santa María', archivo: 'plaza-santa-maria.html', preguntas: 5,
+        { num: 5, nombre: 'Plaza de Santa María', archivo: 'plaza-santa-maria.html', lat: 37.908937987257296, lng: -2.9999325450970193, preguntas: 5,
           reliquia: { icono: '⛓️', nombre: 'Eslabón de las Cadenas', descripcion: 'Un eslabón de la Fuente de las Cadenas, forjado cuando Cazorla aún temía al río que corre bajo la plaza.' } },
-        { num: 6, nombre: 'Molino Harinero', archivo: 'rio-tragantia.html', preguntas: 4,
+        { num: 6, nombre: 'Molino Harinero', archivo: 'rio-tragantia.html', lat: 37.90791538169969, lng: -2.9998242684716416, preguntas: 4,
           reliquia: { icono: '🐍', nombre: 'Escama de la Tragantía', descripcion: 'Brilla con reflejos verdes junto al Cerezuelo. La prueba de que ella es real.' } },
-        { num: 7, nombre: 'Puerta Norte del Castillo', archivo: 'guarida-tragantia.html', preguntas: 5,
+        { num: 7, nombre: 'Puerta Norte del Castillo', archivo: 'guarida-tragantia.html', lat: 37.90820017764403, lng: -3.0007798683021822, preguntas: 5,
           reliquia: { icono: '👑', nombre: 'Diadema de María', descripcion: 'Lo último que quedó de la hija del Señor de Cazorla antes de convertirse en leyenda.' } }
     ];
 
@@ -504,17 +504,36 @@
         evento('busqueda_inicio');
     }
 
-    // El GPS en calles estrechas falla 15-30 m: se amplía el radio con la precisión (máx. +15 m).
-    function radioEfectivo(radio, precision) {
-        return radio + Math.min(Math.max(precision || 0, 0), 15);
+    // Zona propia del portal: la mitad de la distancia al portal más cercano menos 5 m, para que
+    // las zonas de dos portales vecinos nunca se toquen (el 3 y el 4 están a solo 56 m).
+    // Las coordenadas de PORTALES deben coincidir con CONFIG.destino de cada portal.
+    function zonaPropia(num) {
+        const p = PORTALES[num - 1];
+        if (!p) return 40;
+        const vecino = Math.min.apply(null, PORTALES.filter(o => o.num !== num).map(o => distanciaMetros(p.lat, p.lng, o.lat, o.lng)));
+        return vecino / 2 - 5;
+    }
+    function distanciaMetros(lat1, lng1, lat2, lng2) {
+        const R = 6371e3, f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
+        const df = (lat2 - lat1) * Math.PI / 180, dl = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(df / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    // Si el jugador lleva 20 s a menos de 40 m sin que el GPS lo detecte, se le ofrece entrar a mano.
+    // El GPS en calles estrechas falla 15-30 m: se amplía el radio con la precisión (máx. +15 m),
+    // sin salir nunca de la zona propia del portal ni bajar del radio configurado.
+    function radioEfectivo(radio, precision) {
+        const ampliado = radio + Math.min(Math.max(precision || 0, 0), 15);
+        return Math.max(radio, Math.min(ampliado, zonaPropia(portalActual)));
+    }
+
+    // Si el jugador lleva 20 s cerca (40 m, o menos si hay otro portal próximo) sin que el GPS
+    // lo detecte, se le ofrece entrar a mano.
     let cercaDesde = null;
     function vigilarLlegada(distancia, alConfirmar) {
         const caja = asegurarLlegadaManual(alConfirmar);
         if (!caja) return;
-        if (distancia > 40) { cercaDesde = null; return; }
+        if (distancia > Math.min(40, zonaPropia(portalActual))) { cercaDesde = null; caja.classList.remove('visible'); return; }
         if (cercaDesde === null) cercaDesde = Date.now();
         if (Date.now() - cercaDesde > 20000 && !caja.classList.contains('visible')) {
             caja.classList.add('visible');
@@ -921,6 +940,7 @@
         brujula: brujula,
         iniciarBusqueda: iniciarBusqueda,
         radioEfectivo: radioEfectivo,
+        zonaPropia: zonaPropia,
         vigilarLlegada: vigilarLlegada,
         fijarSinSustos: fijarSinSustos,
         marcarLlegada: marcarLlegada,
