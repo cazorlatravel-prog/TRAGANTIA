@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Brecha #1 · Plaza de la Corredera</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
@@ -425,7 +425,7 @@
         </div>
 
         <button class="btn-iniciar" id="btnIniciar">
-            ACTIVAR BÚSQUEDA SIGUIENTE PORTAL
+            📡 INICIAR RASTREO DEL PORTAL
         </button>
 
         <div class="aviso-reanudar" id="avisoReanudar">
@@ -646,7 +646,7 @@
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
         function actualizarRumbo(lat, lng) {
-            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
+            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng), calcularDistancia(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
         }
         function actualizarTendencia(distancia) {
             const el = document.getElementById('tendenciaDistancia');
@@ -676,6 +676,17 @@
             actualizarPuntosFlotante();
             mostrarDeltaPuntos('-' + coste, '#f5c842');
             guardarEstadoQuiz();
+        }
+
+        // === SALTAR LA NARRACIÓN (muestra el texto completo y habilita el sellado) ===
+        function saltarNarracion() {
+            if (!estado.narracionActiva) return;
+            clearInterval(estado.intervaloTexto);
+            elementos.narrativoTexto.textContent = CONFIG.textoNarrativo;
+            elementos.audioNarrativo.pause();
+            estado.textoTerminado = true;
+            estado.audioTerminado = true;
+            verificarFinNarracion();
         }
 
         // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
@@ -938,9 +949,6 @@
             // Actualizar display
             elementos.valorMetros.textContent = Math.round(distancia);
 
-            // Actualizar punto en el radar (simulado)
-            actualizarRadar(distancia);
-
             // Actualizar mapa si está disponible
             actualizarMapa(latitude, longitude);
 
@@ -958,10 +966,13 @@
             document.getElementById('mensajeGps').style.display = 'none';
 
             // Comprobar si está en el radio
-            if (distancia <= CONFIG.destino.radio && !estado.visorActivo) {
+            // (con margen según la precisión del GPS; si no detecta, se ofrece entrar a mano)
+            if (distancia <= Juego.radioEfectivo(CONFIG.destino.radio, accuracy) && !estado.visorActivo) {
                 detenerPitidos();
                 vibrar([100, 60, 100, 60, 300]);
                 activarVisor();
+            } else if (!estado.visorActivo) {
+                Juego.vigilarLlegada(distancia, () => { detenerPitidos(); activarVisor(); });
             }
         }
 
@@ -981,22 +992,6 @@
                 elementos.btnIniciar.innerHTML = '📡 Reintentar';
                 detenerPitidos();
             }
-        }
-
-        // === ACTUALIZAR RADAR VISUAL ===
-        function actualizarRadar(distancia) {
-            // Mover el punto objetivo según la distancia
-            const maxDist = 500; // distancia máxima representada
-            const porcentaje = Math.min(distancia / maxDist, 1);
-            const radio = 40 + (porcentaje * 40); // 40% a 80% del radar
-
-            // Posición aleatoria pero consistente
-            const angulo = (distancia * 0.1) % 360;
-            const x = 50 + Math.cos(angulo * Math.PI / 180) * radio;
-            const y = 50 + Math.sin(angulo * Math.PI / 180) * radio;
-
-            elementos.puntoObjetivo.style.left = x + '%';
-            elementos.puntoObjetivo.style.top = y + '%';
         }
 
         // === ACTIVAR VISOR DEL MUNDO DEL REVÉS ===
@@ -1058,7 +1053,7 @@
             let index = 0;
             elementos.narrativoTexto.innerHTML = '';
 
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) {
                     elementos.narrativoTexto.innerHTML += texto.charAt(index);
                     index++;
@@ -1129,7 +1124,7 @@
             let index = 0;
             elementos.narrativoTexto.innerHTML = '';
             
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) {
                     elementos.narrativoTexto.innerHTML += texto.charAt(index);
                     index++;

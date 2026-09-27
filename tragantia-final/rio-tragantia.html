@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Brecha #6 · Molino Harinero</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
@@ -383,7 +383,7 @@
             <p class="objetivo-texto">Junto al Museo Frondosa Naturaleza</p>
         </div>
 
-        <button class="btn-iniciar" id="btnIniciar"> ACTIVAR BÚSQUEDA SIGUIENTE PORTAL</button>
+        <button class="btn-iniciar" id="btnIniciar">📡 INICIAR RASTREO DEL PORTAL</button>
 
         <div class="aviso-reanudar" id="avisoReanudar">
             <p>〰 RITUAL INTERRUMPIDO DETECTADO</p>
@@ -523,7 +523,7 @@
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
         function actualizarRumbo(lat, lng) {
-            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
+            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng), calcularDistancia(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
         }
         function actualizarTendencia(distancia) {
             const el = document.getElementById('tendenciaDistancia');
@@ -553,6 +553,17 @@
             actualizarPuntosFlotante();
             mostrarDeltaPuntos('-' + coste, '#f5c842');
             guardarEstadoQuiz();
+        }
+
+        // === SALTAR LA NARRACIÓN (muestra el texto completo y habilita el sellado) ===
+        function saltarNarracion() {
+            if (!estado.narracionActiva) return;
+            clearInterval(estado.intervaloTexto);
+            elementos.narrativoTexto.textContent = CONFIG.textoNarrativo;
+            elementos.audioNarrativo.pause();
+            estado.textoTerminado = true;
+            estado.audioTerminado = true;
+            verificarFinNarracion();
         }
 
         // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
@@ -761,7 +772,8 @@
             elPrecision.textContent = 'PRECISIÓN GPS: ±' + Math.round(accuracy) + 'm';
             elPrecision.classList.toggle('mala', accuracy > 35);
             document.getElementById('mensajeGps').style.display = 'none';
-            if (dist <= CONFIG.destino.radio && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); }
+            if (dist <= Juego.radioEfectivo(CONFIG.destino.radio, accuracy) && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); }
+            else if (!estado.visorActivo) Juego.vigilarLlegada(dist, () => { detenerPitidos(); activarVisor(); });
         }
 
         function errorGPS(error) {
@@ -817,7 +829,7 @@
             const texto = CONFIG.textoNarrativo;
             let index = 0;
             elementos.narrativoTexto.innerHTML = '';
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
                 else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
             }, 50);
@@ -845,7 +857,7 @@
             elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9;
             elementos.audioNarrativo.play().catch(() => { estado.audioTerminado = true; verificarFinNarracion(); });
             const texto = CONFIG.textoNarrativo; let index = 0; elementos.narrativoTexto.innerHTML = '';
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
                 else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
             }, 50);

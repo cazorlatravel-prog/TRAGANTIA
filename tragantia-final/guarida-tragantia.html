@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Brecha #7 · Puerta Norte Castillo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
@@ -360,7 +360,7 @@
             <div class="radar-overlay">
                 <div class="abismo-ring"></div><div class="abismo-ring"></div><div class="abismo-ring"></div><div class="abismo-ring"></div>
                 <div class="radar-sweep-final"></div>
-                <div class="punto-objetivo"></div>
+                <div class="punto-objetivo" id="puntoObjetivo"></div>
             </div>
         </div>
         <div class="display-distancia">
@@ -378,7 +378,7 @@
             <p class="objetivo-texto">⚠ PUERTA NORTE del Castillo ⚠</p>
             <p class="objetivo-texto" style="font-size:0.75em; margin-top:8px; color:#ff6b6b;">No es la entrada principal. Busca el acceso a los jardines.</p>
         </div>
-        <button class="btn-iniciar" id="btnIniciar">☠ ACTIVAR BÚSQUEDA PORTAL FINAL</button>
+        <button class="btn-iniciar" id="btnIniciar">☠ INICIAR RASTREO DEL PORTAL FINAL</button>
         <div class="aviso-reanudar" id="avisoReanudar">
             <p>☠ RITUAL INTERRUMPIDO DETECTADO</p>
             <button class="btn-reanudar-quiz" onclick="reanudarQuizGuardado()">Continuar donde lo dejaste</button>
@@ -468,14 +468,15 @@
                 <div class="stat-box"><div class="stat-valor" id="statBonus">+0</div><div class="stat-label">BONUS</div></div>
             </div>
             <div class="rango-titulo" id="rangoTitulo">Guardián de Cazorla</div>
-            <div id="resumenLogros"></div>
-            <button class="btn-guardar" onclick="guardarImagen()">📸 GUARDAR IMAGEN</button>
+            <button class="jg-btn-compartir" onclick="compartirHazana()">📤 COMPARTIR MI HAZAÑA</button>
             <div class="compartir-redes">
                 <button class="btn-red" onclick="compartirWhatsApp()">💬</button>
-                <button class="btn-red" onclick="compartirTwitter()">🐦</button>
+                <button class="btn-red" onclick="compartirTwitter()">𝕏</button>
                 <button class="btn-red" onclick="compartirFacebook()">📘</button>
                 <button class="btn-red" onclick="copiarEnlace()">🔗</button>
             </div>
+            <button class="btn-guardar" onclick="guardarImagen()">📸 GUARDAR IMAGEN</button>
+            <div id="resumenLogros"></div>
             <button class="btn-finalizar" onclick="finalizarJuego()">Finalizar Aventura</button>
         </div>
     </div>
@@ -529,7 +530,7 @@
 
         // === RUMBO HACIA EL DESTINO ===
         function calcularRumbo(lat1, lng1, lat2, lng2) { var f1 = lat1*Math.PI/180, f2 = lat2*Math.PI/180, dl = (lng2-lng1)*Math.PI/180; var y = Math.sin(dl)*Math.cos(f2); var x = Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl); return (Math.atan2(y, x)*180/Math.PI+360)%360; }
-        function actualizarRumbo(lat, lng) { Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng)); }
+        function actualizarRumbo(lat, lng) { Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng), calcularDistancia(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng)); }
         function actualizarTendencia(distancia) { var el = document.getElementById('tendenciaDistancia'); if (distanciaAnterior !== null && Math.abs(distancia-distanciaAnterior) > 2) { if (distancia < distanciaAnterior) { el.textContent = '▼ TE ACERCAS'; el.className = 'tendencia-distancia acercando'; } else { el.textContent = '▲ TE ALEJAS'; el.className = 'tendencia-distancia alejando'; } } distanciaAnterior = distancia; }
 
         // === ANIMACIÓN DE PUNTOS GANADOS/PERDIDOS ===
@@ -537,6 +538,9 @@
 
         // === PISTAS: descontar su coste ===
         function aplicarCostePista(coste) { if (estado.procesandoRespuesta) return false; if (estado.puntuacionTotal < coste) return 'sin_puntos'; estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - coste); elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-' + coste + ' pista)'; actualizarPuntosFlotante(); mostrarDeltaPuntos('-' + coste, '#f5c842'); guardarEstadoQuiz(); }
+
+        // === SALTAR LA NARRACIÓN (muestra el texto completo y habilita el sellado) ===
+        function saltarNarracion() { if (!estado.narracionActiva) return; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.textContent = CONFIG.textoNarrativo; elementos.audioNarrativo.pause(); estado.textoTerminado = true; estado.audioTerminado = true; verificarFinNarracion(); }
 
         // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
         function reanudarEnPortal(fase) { elementos.audioSusto.play().then(function() { elementos.audioSusto.pause(); }).catch(function(){}); elementos.audioVerdad.play().then(function() { elementos.audioVerdad.pause(); elementos.audioVerdad.currentTime = 0; }).catch(function(){}); solicitarWakeLock(); if (fase === 'narrativa') estado.narrativoMostrado = true; activarVisor(); }
@@ -620,14 +624,14 @@
         function reproducirPitido() { if (estado.visorActivo) return; elementos.audioPitido.currentTime = 0; elementos.audioPitido.volume = 0.5; elementos.audioPitido.play().catch(function(){}); }
         function actualizarSistemaPitidos(d) { var n = calcularIntervalosPitido(d); if (estado.intervaloPitido) clearInterval(estado.intervaloPitido); estado.intervaloPitido = setInterval(reproducirPitido, n); if (Math.abs(estado.ultimaDistancia - d) > 20) reproducirPitido(); estado.ultimaDistancia = d; }
         function detenerPitidos() { if (estado.intervaloPitido) { clearInterval(estado.intervaloPitido); estado.intervaloPitido = null; } }
-        function actualizarPosicion(pos) { var d = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng); elementos.valorMetros.textContent = Math.round(d); actualizarMapa(pos.coords.latitude, pos.coords.longitude); actualizarSistemaPitidos(d); actualizarRumbo(pos.coords.latitude, pos.coords.longitude); actualizarTendencia(d); var ep = document.getElementById('precisionGps'); ep.textContent = 'PRECISIÓN GPS: ±' + Math.round(pos.coords.accuracy) + 'm'; ep.classList.toggle('mala', pos.coords.accuracy > 35); document.getElementById('mensajeGps').style.display = 'none'; if (d <= CONFIG.destino.radio && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); } }
+        function actualizarPosicion(pos) { var d = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng); elementos.valorMetros.textContent = Math.round(d); actualizarMapa(pos.coords.latitude, pos.coords.longitude); actualizarSistemaPitidos(d); actualizarRumbo(pos.coords.latitude, pos.coords.longitude); actualizarTendencia(d); var ep = document.getElementById('precisionGps'); ep.textContent = 'PRECISIÓN GPS: ±' + Math.round(pos.coords.accuracy) + 'm'; ep.classList.toggle('mala', pos.coords.accuracy > 35); document.getElementById('mensajeGps').style.display = 'none'; if (d <= Juego.radioEfectivo(CONFIG.destino.radio, pos.coords.accuracy) && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); } else if (!estado.visorActivo) { Juego.vigilarLlegada(d, function() { detenerPitidos(); activarVisor(); }); } }
         function errorGPS(error) { Juego.registrarErrorGps(error.code); var textos = { 1: '⚠ PERMISO DE UBICACIÓN DENEGADO. Actívalo en los ajustes del navegador y reintenta.', 2: '⚠ SEÑAL GPS NO DISPONIBLE. Muévete a cielo abierto.', 3: '⚠ EL GPS TARDA EN RESPONDER. Buscando señal...' }; var msg = document.getElementById('mensajeGps'); msg.textContent = textos[error.code] || '⚠ ERROR DE GPS. Reintenta.'; msg.style.display = 'block'; if (error.code === 1) { elementos.btnIniciar.disabled = false; elementos.btnIniciar.innerHTML = '☠ Reintentar'; detenerPitidos(); } }
         function activarVisor() { estado.visorActivo = true; Juego.marcarLlegada(); elementos.pantallaRadar.style.display = 'none'; elementos.visorReves.style.display = 'block'; elementos.btnResolver.style.display = 'none'; intentarCamara(); elementos.audioAmbiente.volume = 0.1; elementos.audioAmbiente.play().catch(function(){}); iniciarNarracion(); setTimeout(function() { programarSusto(); }, 15000); }
         function intentarCamara() { navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function(stream) { elementos.videoCamara.srcObject = stream; elementos.btnActivarCamara.style.display = 'none'; }).catch(function() { elementos.btnActivarCamara.style.display = 'block'; }); }
-        function iniciarNarracion() { if (estado.narrativoMostrado) { elementos.btnResolver.style.display = 'block'; return; } estado.narrativoMostrado = true; estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.volume = 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; elementos.narrativoTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
+        function iniciarNarracion() { if (estado.narrativoMostrado) { elementos.btnResolver.style.display = 'block'; return; } estado.narrativoMostrado = true; estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.volume = 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.innerHTML = ''; var tw = estado.intervaloTexto = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
         function verificarFinNarracion() { if (estado.textoTerminado && estado.audioTerminado) finalizarNarracion(); }
         function finalizarNarracion() { if (!estado.narracionActiva) return; estado.narracionActiva = false; Juego.guardarFase('narrativa'); elementos.btnRepetir.classList.add('visible'); elementos.audioAmbiente.volume = 0.4; setTimeout(function() { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(function() { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500); }
-        function repetirNarracion() { estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.btnRepetir.classList.remove('visible'); elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; elementos.narrativoTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
+        function repetirNarracion() { estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.btnRepetir.classList.remove('visible'); elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.innerHTML = ''; var tw = estado.intervaloTexto = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
         function toggleSilenciar() { estado.audioSilenciado = !estado.audioSilenciado; if (estado.audioSilenciado) { elementos.audioNarrativo.volume = 0; elementos.iconoAudio.style.opacity = '0.4'; elementos.btnSilenciar.textContent = 'Activar'; } else { elementos.audioNarrativo.volume = 0.9; elementos.iconoAudio.style.opacity = '1'; elementos.btnSilenciar.textContent = 'Silenciar'; } }
         function programarSusto() { if (!estado.visorActivo) return; setTimeout(function() { if (estado.visorActivo && elementos.modalQuiz.style.display !== 'block' && !estado.narracionActiva && elementos.pantallaVerdad.style.display !== 'block') ejecutarSusto(); programarSusto(); }, 5000 + Math.random() * 10000); }
         function ejecutarSusto() { if (estado.narracionActiva || elementos.pantallaVerdad.style.display === 'block') return; vibrar([80, 40, 200]); elementos.efectoSusto.classList.add('activo'); elementos.audioSusto.currentTime = 0; elementos.audioSusto.volume = 0.9; elementos.audioSusto.play(); elementos.videoCamara.style.filter = 'contrast(5) brightness(5) hue-rotate(180deg) invert(1)'; setTimeout(function() { elementos.efectoSusto.classList.remove('activo'); elementos.videoCamara.style.filter = ''; }, 1500); }
@@ -643,9 +647,13 @@
         async function detectarPortal() { if (!estado.deteccionActiva || estado.portalDetectado) return; var canvas = elementos.canvasDeteccion; var ctx = canvas.getContext('2d'); canvas.width = 224; canvas.height = 224; ctx.drawImage(elementos.buscarVideo, 0, 0, 224, 224); if (estado.modeloCargado && mobilenetModel) { try { var ff = await extraerCaracteristicas(canvas); var s1 = calcularSimilitudCoseno(ff, referenciaFeatures1); var s2 = calcularSimilitudCoseno(ff, referenciaFeatures2); if (Math.max(s1, s2) > 0.60) { portalEncontrado(); return; } } catch (err) {} } else { var id = ctx.getImageData(0, 0, 224, 224).data; var po = 0; for (var y = 70; y < 154; y++) { for (var x = 70; x < 154; x++) { var ix = (y*224+x)*4; if ((id[ix]+id[ix+1]+id[ix+2])/3 < 40) po++; } } if (po/(84*84) > 0.4) { portalEncontrado(); return; } } requestAnimationFrame(detectarPortal); }
         function calcularSimilitudCoseno(a, b) { var dot=0, nA=0, nB=0; for (var i=0; i<a.length; i++) { dot+=a[i]*b[i]; nA+=a[i]*a[i]; nB+=b[i]*b[i]; } return dot/(Math.sqrt(nA)*Math.sqrt(nB)); }
         function portalEncontrado() { if (estado.portalDetectado) return; estado.portalDetectado = true; estado.deteccionActiva = false; elementos.portalDetectado.classList.add('activo'); elementos.buscarCargando.style.display = 'none'; if (navigator.vibrate) navigator.vibrate([200,100,200]); setTimeout(function() { mostrarVerdad(); }, 2000); }
-        function mostrarVerdad() { elementos.pantallaBuscarPortal.style.display = 'none'; elementos.pantallaVerdad.style.display = 'block'; elementos.audioAmbiente.pause(); elementos.audioAmbiente.currentTime = 0; elementos.audioSusto.pause(); elementos.audioSusto.currentTime = 0; elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; elementos.audioPitido.pause(); estado.audioSilenciado = true; elementos.audioVerdad.volume = 0.9; elementos.audioVerdad.play().catch(function(){}); var texto = CONFIG.textoVerdad; var i = 0; elementos.verdadTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { if (texto.charAt(i) === '\n') { elementos.verdadTexto.innerHTML += '<br><br>'; } else { elementos.verdadTexto.innerHTML += texto.charAt(i); } i++; elementos.pantallaVerdad.scrollTop = elementos.pantallaVerdad.scrollHeight; } else { clearInterval(tw); } }, 40); elementos.audioVerdad.addEventListener('ended', function() { setTimeout(mostrarPuntuacionFinal, 2000); }, { once: true }); }
+        function mostrarVerdad() { elementos.pantallaBuscarPortal.style.display = 'none'; elementos.pantallaVerdad.style.display = 'block'; elementos.audioAmbiente.pause(); elementos.audioAmbiente.currentTime = 0; elementos.audioSusto.pause(); elementos.audioSusto.currentTime = 0; elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; elementos.audioPitido.pause(); estado.audioSilenciado = true; elementos.audioVerdad.volume = 0.9; elementos.audioVerdad.addEventListener('error', mostrarBotonVerdad, { once: true }); elementos.audioVerdad.play().catch(mostrarBotonVerdad); var texto = CONFIG.textoVerdad; var i = 0; elementos.verdadTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { if (texto.charAt(i) === '\n') { elementos.verdadTexto.innerHTML += '<br><br>'; } else { elementos.verdadTexto.innerHTML += texto.charAt(i); } i++; elementos.pantallaVerdad.scrollTop = elementos.pantallaVerdad.scrollHeight; } else { clearInterval(tw); mostrarBotonVerdad(); } }, 40); elementos.audioVerdad.addEventListener('ended', function() { setTimeout(mostrarPuntuacionFinal, 2000); }, { once: true }); }
+
+        function mostrarBotonVerdad() { if (document.getElementById('btnVerdadContinuar')) return; var b = document.createElement('button'); b.id = 'btnVerdadContinuar'; b.className = 'btn-finalizar'; b.textContent = 'Ver mi resultado ▸'; b.onclick = mostrarPuntuacionFinal; document.querySelector('.verdad-contenido').appendChild(b); }
 
         function mostrarPuntuacionFinal() {
+            if (estado.finalMostrado) return;
+            estado.finalMostrado = true;
             elementos.pantallaVerdad.style.display = 'none';
             elementos.pantallaPuntuacion.style.display = 'block';
             estado.puntuacionTotal += 50;
@@ -681,10 +689,13 @@
         }
 
         async function guardarImagen() { try { var c = document.getElementById('puntuacionContenido'); var canvas = await html2canvas(c, { backgroundColor: '#030303', scale: 2 }); var link = document.createElement('a'); link.download = 'tragantia-puntuacion.png'; link.href = canvas.toDataURL('image/png'); link.click(); } catch (err) { alert('Haz una captura de pantalla manualmente.'); } }
-        function compartirWhatsApp() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos y el rango «'+rangoFinal+'»! ¿Te atreves? 👻 #LaTragantia #Cazorla'; window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank'); }
-        function compartirTwitter() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos y el rango «'+rangoFinal+'»! 👻 #LaTragantia #Cazorla'; window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(t),'_blank'); }
-        function compartirFacebook() { window.open('https://www.facebook.com/sharer/sharer.php?quote='+encodeURIComponent('¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos!'),'_blank'); }
-        function copiarEnlace() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos! 👻'; navigator.clipboard.writeText(t).then(function(){alert('¡Copiado!');}).catch(function(){alert('Tu puntuación: '+(puntosAnteriores+estado.puntuacionTotal));}); }
+        var URL_JUEGO = 'https://leyendatragantia.com/';
+        function textoHazana() { return '🏆 ¡He completado La Tragantía con ' + (puntosAnteriores + estado.puntuacionTotal) + ' puntos y el rango «' + rangoFinal + '»! ¿Te atreves? 👻 #LaTragantia #Cazorla'; }
+        function compartirHazana() { if (navigator.share) { navigator.share({ title: 'La Tragantía', text: textoHazana(), url: URL_JUEGO }).catch(function(){}); } else { compartirWhatsApp(); } }
+        function compartirWhatsApp() { window.open('https://wa.me/?text=' + encodeURIComponent(textoHazana() + ' ' + URL_JUEGO), '_blank'); }
+        function compartirTwitter() { window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(textoHazana()) + '&url=' + encodeURIComponent(URL_JUEGO), '_blank'); }
+        function compartirFacebook() { window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(URL_JUEGO), '_blank'); }
+        function copiarEnlace() { navigator.clipboard.writeText(textoHazana() + ' ' + URL_JUEGO).then(function(){ alert('¡Copiado!'); }).catch(function(){ alert('Tu puntuación: ' + (puntosAnteriores + estado.puntuacionTotal)); }); }
         function finalizarJuego() { localStorage.removeItem('tragantia_progreso'); window.location.href = 'index.html'; }
         function salirMision() { if (confirm('¿Abandonar la misión final?')) { Juego.evento('salida'); elementos.audioAmbiente.pause(); if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(function(t){t.stop();}); if (elementos.buscarVideo.srcObject) elementos.buscarVideo.srcObject.getTracks().forEach(function(t){t.stop();}); window.location.href = 'index.html'; } }
     </script>

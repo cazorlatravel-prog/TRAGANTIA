@@ -164,6 +164,7 @@ let estado = {
 ### JavaScript Conventions
 
 - **Vanilla JS only** — no frameworks, no jQuery
+- Portals use `viewport-fit=cover` without zoom blocking (accessibility); `index.html` adds `body.modo-jugador` (hides marketing sections) when there is a game in progress or the PWA is installed
 - Portal 1 (`plaza-corredera.html`) uses ES6+ syntax (arrow functions, `const`/`let`, template literals)
 - Portal 7 (`guarida-tragantia.html`) uses more compact, minified-style code with `function` declarations
 - Other portals (2-6) use a mix of arrow functions and standard functions
@@ -187,7 +188,8 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 |------|-------|
 | `Juego.iniciarPortal(N)` | Right after saving `tragantia_progreso` (adds the 🎒 relic bag button) |
 | `Juego.brujula.activar()` + `Juego.iniciarBusqueda()` | Inside the "Activar búsqueda" click (iOS compass permission needs the gesture) |
-| `Juego.brujula.fijarRumbo(rumbo)` | `actualizarRumbo()`; the module draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) |
+| `Juego.brujula.fijarRumbo(rumbo, distancia)` | `actualizarRumbo()`; draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) and places `#puntoObjetivo` on the radar at the real bearing (north-up, like the map) |
+| `Juego.radioEfectivo(radio, accuracy)` + `Juego.vigilarLlegada(distancia, alConfirmar)` | Arrival check in `actualizarPosicion()`: radius grows with GPS accuracy (max +15 m); after 20 s within 40 m a manual "Estoy frente al portal" button appears |
 | `Juego.marcarLlegada()` / `Juego.guardarFase('narrativa')` | `activarVisor()` / `finalizarNarracion()` |
 | `Juego.prepararReanudacion(total, reanudarQuizGuardado, reanudarEnPortal)` | On `DOMContentLoaded`; fills and shows `#avisoReanudar` |
 | `Juego.prepararPista(i, pregunta, elementos.quizContenido, aplicarCostePista)` | End of `cargarPregunta()`; hint costs 30 pts, needs ≥30 pts in the portal, removes one wrong option |
@@ -196,6 +198,9 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | `Juego.finalizarMision(totales)` | Portal 7 only; returns the rank `{titulo, estrellas}` |
 
 - **Ranks** are based on points / max possible for the sealed portals (120 per question + 50 per portal).
+- **Shared UI layer:** `inyectarEstilos()` also injects the design/accessibility overrides for all portals (radar layout with scroll, safe areas, contrast, 44 px touch targets, `prefers-reduced-motion`, focus). Prefer adding cross-portal CSS there instead of editing 7 files.
+- `Juego.iniciarPortal(N)` also rebuilds the 7-dot `.contador-brechas`, adds a "Saltar ▸" button (calls the portal's `saltarNarracion()`) and a "🔄 Historia" button (calls `repetirNarracion()`), and applies the "modo sin sustos" (toggle in the 🎒 bag, key `tragantia_sin_sustos`, survives new games).
+- Wrong answers shake the quiz and lock the failed option; `completarPortal()` shows the next destination on the success screen and reveals the relic after 1.5 s.
 - **Usage stats:** `ESTADISTICAS_URL` at the top of `juego.js` (empty = events are only queued locally). Setup: `estadisticas/LEEME.md`.
 
 ## Persistence (localStorage)
@@ -220,6 +225,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | `tragantia_pistas_total`, `tragantia_racha` | number | Total hints used / current first-try correct streak |
 | `tragantia_inicio_partida` | timestamp | Set on code validation; used for total mission time |
 | `tragantia_sesion` | string | Anonymous random id for usage stats |
+| `tragantia_sin_sustos` | `'true'` | "Modo sin sustos": no flashes or scare sounds |
 | `tragantia_eventos_pendientes` | JSON | Stats events waiting to be sent (max 300; survives "Borrar datos") |
 
 **In-portal save:** if the app closes mid-portal, the radar screen offers to resume: mid-quiz (same question, points, timer and used hint) or, if the player had already arrived, straight into the visor without GPS. Relics are derived from `tragantia_portalX_completado`. Validating a code (`Juego.nuevaPartida()`) wipes all `tragantia_*` game keys except auth and the stats queue.

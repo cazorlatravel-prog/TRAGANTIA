@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Tragantia Escape City - Cazorla</title>
+    <title>La Tragantía Escape City - Cazorla</title>
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0a0a0a">
-    <meta name="description" content="Escape City con realidad aumentada en Cazorla. Recorre 7 portales, resuelve enigmas y descubre la leyenda de La Tragantia. Reserva ya tu aventura.">
+    <meta name="description" content="Escape City con realidad aumentada en Cazorla. Recorre 7 portales, resuelve enigmas y descubre la leyenda de La Tragantía. Reserva ya tu aventura.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Tragantia">
+    <meta name="apple-mobile-web-app-title" content="Tragantía">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="imagenes/icon-192.png">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="La Tragantia - Escape City Cazorla">
-    <meta property="og:description" content="Escape urbano con realidad aumentada. 7 portales, enigmas y la leyenda de La Tragantia te esperan en Cazorla.">
+    <meta property="og:title" content="La Tragantía - Escape City Cazorla">
+    <meta property="og:description" content="Escape urbano con realidad aumentada. 7 portales, enigmas y la leyenda de La Tragantía te esperan en Cazorla.">
     <meta property="og:image" content="imagenes/tragantia.jpg">
     <meta property="og:type" content="website">
 
@@ -775,6 +775,44 @@
         }
         .reliquias-fila .bloqueada { filter: grayscale(1) brightness(0.25); }
 
+        /* === Revisión de diseño: acceso, modo jugador, contraste y zonas táctiles === */
+        :root { --st-gray: #8f8a82; --st-text-dim: #a39d93; }
+        .cta-tengo-codigo {
+            display: inline-flex; align-items: center; min-height: 44px; margin-top: 14px; padding: 0 12px;
+            color: var(--st-amber); font-family: 'Orbitron', sans-serif; font-size: 0.8em; letter-spacing: 1px;
+            text-decoration: underline; text-underline-offset: 4px;
+        }
+        .modo-jugador .hero, .modo-jugador .video-section, .modo-jugador .retos-section,
+        .modo-jugador .features-section, .modo-jugador .como-section, .modo-jugador .cta-section { display: none; }
+        .modo-jugador .acceso-section { padding-top: 24px; }
+        .btn-ver-info { display: none; }
+        .modo-jugador .btn-ver-info {
+            display: inline-flex; align-items: center; min-height: 44px; margin: -8px auto 16px; padding: 0 14px;
+            background: transparent; border: none; color: var(--st-gray); font-family: 'Orbitron', sans-serif;
+            font-size: 0.7em; letter-spacing: 1px; text-decoration: underline; text-underline-offset: 4px; cursor: pointer;
+        }
+        .etiqueta-codigo { display: block; margin-bottom: 4px; color: var(--st-amber); font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.85em; letter-spacing: 2px; }
+        input[type="text"] { font-size: 1.35em; letter-spacing: 2px; }
+        input[type="text"]::placeholder { color: var(--st-gray); letter-spacing: 1px; font-size: 0.8em; }
+        #error-msg { animation: none; margin: -6px 0 14px; font-size: 1.15em; color: #ff4d58; }
+        .link-comprar { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; color: var(--st-amber); font-size: 0.8em; }
+        .btn-borrar { min-height: 44px; font-size: 0.72em; color: var(--st-gray); }
+        .hero-scroll { color: #8f8a82; }
+        .footer-text { color: var(--st-gray); }
+        .portal-stats { color: var(--st-gray); }
+        .modal-instalar-cerrar { min-height: 44px; padding: 12px 32px; }
+        .btn-audio { min-height: 48px; }
+        .modal-instrucciones { background: #030303; }
+        .btn-comenzar { position: sticky; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 1; box-shadow: 0 -12px 24px #030303; }
+        .instrucciones-subtitulo, .progreso-subtitulo, .seccion-subtitulo { letter-spacing: 1px; }
+        .hero-subtitle { letter-spacing: 6px; }
+        .reanudar-stats small { font-size: 0.6em; letter-spacing: 0.5px; color: #a39d93; }
+        .reanudar-stats span { font-size: 1.1em; }
+        .reliquias-etiqueta { font-size: 0.65em; }
+        .siguiente-paso { font-size: 1.15em; letter-spacing: 0; }
+        .btn-reanudar { letter-spacing: 1.5px; }
+        .portal-item { min-height: 64px; }
+
         /* Animación de error en el input de código */
         @keyframes shake-error {
             0%, 100% { transform: translateX(0); }
@@ -1155,9 +1193,9 @@
         <section class="hero">
             <p class="hero-badge">Portal Abierto</p>
 
-            <img src="imagenes/tragantia.jpg" alt="La Tragantia - Escape City Cazorla" class="hero-image">
+            <img src="imagenes/tragantia.jpg" alt="La Tragantía - Escape City Cazorla" class="hero-image">
 
-            <h1>La Tragantia</h1>
+            <h1>La Tragantía</h1>
             <p class="hero-subtitle">Escape City</p>
 
             <p class="hero-tagline">Un <strong>escape urbano con realidad aumentada</strong> por las calles de Cazorla. Encuentra los 7 portales, resuelve los enigmas y sella las brechas antes de que sea demasiado tarde.</p>
@@ -1166,9 +1204,10 @@
 
             <a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="cta-comprar">Reservar Aventura</a>
             <span class="cta-precio">Disponible en CazorlaTravel.es</span>
+            <a href="#acceso" class="cta-tengo-codigo">¿Ya tienes código? Empieza aquí &#8595;</a>
 
             <div class="hero-scroll">
-                DESCUBRE MAS
+                DESCUBRE MÁS
                 <span>&#8595;</span>
             </div>
         </section>
@@ -1182,7 +1221,7 @@
             <div class="video-container">
                 <iframe
                     src="https://www.youtube.com/embed/65W_9IgWutE?rel=0&modestbranding=1"
-                    title="La Tragantia - Escape City Cazorla - Trailer"
+                    title="La Tragantía - Escape City Cazorla - Trailer"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen
                     loading="lazy">
@@ -1194,33 +1233,33 @@
         <section class="retos-section">
             <div class="seccion-separador"></div>
             <h2 class="seccion-titulo">Los 7 Portales</h2>
-            <p class="seccion-subtitulo">Retos que deberas superar</p>
+            <p class="seccion-subtitulo">Retos que deberás superar</p>
 
             <div class="portal-card" data-portal="1">
                 <div class="portal-card-num">1</div>
                 <div class="portal-card-body">
-                    <div class="portal-card-desc">La primera brecha se ha abierto en el corazon del pueblo. Algo antiguo despierta... localiza el portal y comienza tu mision.</div>
+                    <div class="portal-card-desc">La primera brecha se ha abierto en el corazón del pueblo. Algo antiguo despierta... localiza el portal y comienza tu misión.</div>
                 </div>
             </div>
 
             <div class="portal-card" data-portal="2">
                 <div class="portal-card-num">2</div>
                 <div class="portal-card-body">
-                    <div class="portal-card-desc">Una energia oscura emana de unos muros centenarios. Los ecos del pasado guardan secretos que deberas descifrar.</div>
+                    <div class="portal-card-desc">Una energía oscura emana de unos muros centenarios. Los ecos del pasado guardan secretos que deberás descifrar.</div>
                 </div>
             </div>
 
             <div class="portal-card" data-portal="3">
                 <div class="portal-card-num">3</div>
                 <div class="portal-card-body">
-                    <div class="portal-card-desc">Desde las alturas, la Tragantia observa a sus presas. Un lugar con vistas... y con peligros ocultos.</div>
+                    <div class="portal-card-desc">Desde las alturas, la Tragantía observa a sus presas. Un lugar con vistas... y con peligros ocultos.</div>
                 </div>
             </div>
 
             <div class="portal-card" data-portal="4">
                 <div class="portal-card-num">4</div>
                 <div class="portal-card-body">
-                    <div class="portal-card-desc">Dicen que aqui los susurros se convierten en pruebas. Solo los mas astutos superaran lo que aguarda tras el umbral.</div>
+                    <div class="portal-card-desc">Dicen que aquí los susurros se convierten en pruebas. Solo los más astutos superarán lo que aguarda tras el umbral.</div>
                 </div>
             </div>
 
@@ -1241,7 +1280,7 @@
             <div class="portal-card" data-portal="7">
                 <div class="portal-card-num">7</div>
                 <div class="portal-card-body">
-                    <div class="portal-card-desc">La guarida final de la Tragantia. El enfrentamiento definitivo te espera. Sella la ultima brecha... o quedate atrapado para siempre.</div>
+                    <div class="portal-card-desc">La guarida final de la Tragantía. El enfrentamiento definitivo te espera. Sella la última brecha... o quédate atrapado para siempre.</div>
                 </div>
             </div>
         </section>
@@ -1250,23 +1289,23 @@
         <section class="features-section">
             <div class="seccion-separador"></div>
             <h2 class="seccion-titulo">La Experiencia</h2>
-            <p class="seccion-subtitulo">Tecnologia inmersiva</p>
+            <p class="seccion-subtitulo">Tecnología inmersiva</p>
 
             <div class="features-grid">
                 <div class="feature-card">
                     <span class="feature-icon">&#x1F4CD;</span>
                     <div class="feature-title">GPS en Vivo</div>
-                    <div class="feature-desc">Radar que te guia hasta cada portal con precision</div>
+                    <div class="feature-desc">Radar que te guía hasta cada portal con precisión</div>
                 </div>
                 <div class="feature-card">
                     <span class="feature-icon">&#x1F4F7;</span>
                     <div class="feature-title">Realidad Aumentada</div>
-                    <div class="feature-desc">Visor AR con la camara de tu movil para ver el mundo oculto</div>
+                    <div class="feature-desc">Visor AR con la cámara de tu móvil para ver el mundo oculto</div>
                 </div>
                 <div class="feature-card">
                     <span class="feature-icon">&#x1F3A7;</span>
                     <div class="feature-title">Audio Inmersivo</div>
-                    <div class="feature-desc">Narracion, efectos y sustos para una experiencia completa</div>
+                    <div class="feature-desc">Narración, efectos y sustos para una experiencia completa</div>
                 </div>
                 <div class="feature-card">
                     <span class="feature-icon">&#x1F9E0;</span>
@@ -1279,16 +1318,16 @@
         <!-- ========== COMO FUNCIONA ========== -->
         <section class="como-section">
             <div class="seccion-separador"></div>
-            <h2 class="seccion-titulo">Como Funciona</h2>
+            <h2 class="seccion-titulo">Cómo Funciona</h2>
             <p class="seccion-subtitulo">3 pasos para empezar</p>
 
             <div class="paso-item">
                 <div class="paso-num">1</div>
-                <div class="paso-texto"><strong>Reserva tu codigo</strong> en CazorlaTravel.es. Recibiras un codigo de activacion unico por email.</div>
+                <div class="paso-texto"><strong>Reserva tu código</strong> en CazorlaTravel.es. Recibirás un código de activación único por email.</div>
             </div>
             <div class="paso-item">
                 <div class="paso-num">2</div>
-                <div class="paso-texto"><strong>Activa la app</strong> con tu codigo. Instala la app en tu movil para jugar sin conexion.</div>
+                <div class="paso-texto"><strong>Activa la app</strong> con tu código. Instala la app en tu móvil para jugar sin conexión.</div>
             </div>
             <div class="paso-item">
                 <div class="paso-num">3</div>
@@ -1300,7 +1339,7 @@
         <section class="cta-section">
             <div class="cta-box">
                 <h2 class="cta-box-title">Atrévete a Entrar</h2>
-                <p class="cta-box-desc">Vive una experiencia unica recorriendo Cazorla mientras descubres la leyenda de la Tragantia, la criatura mitad mujer, mitad serpiente.</p>
+                <p class="cta-box-desc">Vive una experiencia única recorriendo Cazorla mientras descubres la leyenda de la Tragantía, la criatura mitad mujer, mitad serpiente.</p>
 
                 <ul class="cta-features-list">
                     <li>7 portales por toda Cazorla</li>
@@ -1308,7 +1347,7 @@
                     <li>Realidad aumentada y GPS</li>
                     <li>Audio narrativo inmersivo</li>
                     <li>Juega a tu ritmo, guarda progreso</li>
-                    <li>Funciona sin conexion (modo offline)</li>
+                    <li>Funciona sin conexión (modo offline)</li>
                 </ul>
 
                 <a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="cta-comprar" style="display:block; width:100%;">Reservar Ahora</a>
@@ -1318,44 +1357,28 @@
         <!-- ========== AUDIO ========== -->
         <div class="audio-section">
             <audio id="introAudio" src="imagenes/audio1.mp3" preload="auto"></audio>
-            <button class="btn-audio" onclick="playIntro()">Escuchar Informe de la Mision</button>
+            <button class="btn-audio" onclick="playIntro()">Escuchar Informe de la Misión</button>
         </div>
 
         <!-- ========== ACCESO CON CODIGO ========== -->
-        <section class="acceso-section">
+        <section class="acceso-section" id="acceso">
             <div class="seccion-separador"></div>
-            <h2 class="seccion-titulo">Acceso a la Mision</h2>
-            <p class="seccion-subtitulo">Introduce tu codigo</p>
+            <h2 class="seccion-titulo">Acceso a la Misión</h2>
+            <button class="btn-ver-info" onclick="verInformacion()">Ver información del juego</button>
+            <p class="seccion-subtitulo">Introduce tu código</p>
 
             <div class="instalado-msg" id="msgInstalado">App instalada correctamente</div>
 
-            <!-- Modal instrucciones instalacion manual -->
-            <div class="modal-instalar-manual" id="modalInstalarManual">
-                <div class="modal-instalar-contenido">
-                    <h3>INSTALAR APP</h3>
-                    <div id="instruccionesIOS" style="display:none;">
-                        <p><span class="icono-instruccion">1.</span> Pulsa el icono de <strong>Compartir</strong> <span style="font-size:1.3em;">&#xFEFF;⎙</span> en la barra del navegador</p>
-                        <p><span class="icono-instruccion">2.</span> Selecciona <strong>"Anadir a pantalla de inicio"</strong></p>
-                        <p><span class="icono-instruccion">3.</span> Pulsa <strong>"Anadir"</strong></p>
-                    </div>
-                    <div id="instruccionesOtro" style="display:none;">
-                        <p><span class="icono-instruccion">1.</span> Abre el menu del navegador <strong>(tres puntos ⋮)</strong></p>
-                        <p><span class="icono-instruccion">2.</span> Selecciona <strong>"Instalar aplicacion"</strong> o <strong>"Anadir a pantalla de inicio"</strong></p>
-                    </div>
-                    <button class="modal-instalar-cerrar" onclick="document.getElementById('modalInstalarManual').classList.remove('visible')">CERRAR</button>
-                </div>
-            </div>
-
             <div class="acceso-box" id="seccion-codigo">
-                <p style="margin-bottom: 4px; color: var(--st-amber);"><strong>CODIGO DE ACTIVACION</strong></p>
-                <input type="text" id="codigo-input" placeholder="- - - -" autocomplete="off">
-                <button class="btn-validar" onclick="validarAcceso()">Iniciar Mision</button>
-                <p style="margin-top: 20px;"><a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="link-comprar">No tienes codigo? Consiguelo aqui</a></p>
-                <p id="error-msg">CODIGO INVALIDO</p>
+                <label for="codigo-input" class="etiqueta-codigo">CÓDIGO DE ACTIVACIÓN</label>
+                <input type="text" id="codigo-input" placeholder="Tu código del email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="error-msg">
+                <p id="error-msg" role="alert">Código no válido</p>
+                <button class="btn-validar" onclick="validarAcceso()">Iniciar Misión</button>
+                <p style="margin-top: 12px;"><a href="https://www.cazorlatravel.es/reservar/escape-city-leyenda-tragantia/" target="_blank" class="link-comprar">¿No tienes código? Consíguelo aquí</a></p>
             </div>
 
             <div class="acceso-box" id="seccion-reanudar" style="display:none;">
-                <p class="mision-en-curso">MISION EN CURSO</p>
+                <p class="mision-en-curso">MISIÓN EN CURSO</p>
                 <div class="reanudar-rango">
                     <div class="reanudar-rango-nombre" id="reanudarRango">Sin rango</div>
                     <div class="reanudar-estrellas" id="reanudarEstrellas"></div>
@@ -1381,11 +1404,28 @@
         <!-- ========== FOOTER ========== -->
         <footer class="footer">
             <p class="footer-text">
-                La Tragantia Escape City &middot; <a href="https://www.cazorlatravel.es" target="_blank" class="footer-link">CazorlaTravel.es</a>
+                La Tragantía Escape City &middot; <a href="https://www.cazorlatravel.es" target="_blank" class="footer-link">CazorlaTravel.es</a>
             </p>
         </footer>
 
     </div><!-- /landing-wrapper -->
+
+            <!-- Modal instrucciones instalacion manual -->
+    <div class="modal-instalar-manual" id="modalInstalarManual" onclick="if (event.target === this) this.classList.remove('visible')">
+        <div class="modal-instalar-contenido">
+            <h3>INSTALAR APP</h3>
+            <div id="instruccionesIOS" style="display:none;">
+                <p><span class="icono-instruccion">1.</span> Pulsa el icono de <strong>Compartir</strong> <span style="font-size:1.3em;">&#xFEFF;⎙</span> en la barra del navegador</p>
+                <p><span class="icono-instruccion">2.</span> Selecciona <strong>"Añadir a pantalla de inicio"</strong></p>
+                <p><span class="icono-instruccion">3.</span> Pulsa <strong>"Añadir"</strong></p>
+            </div>
+            <div id="instruccionesOtro" style="display:none;">
+                <p><span class="icono-instruccion">1.</span> Abre el menú del navegador <strong>(tres puntos ⋮)</strong></p>
+                <p><span class="icono-instruccion">2.</span> Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Añadir a pantalla de inicio"</strong></p>
+            </div>
+            <button class="modal-instalar-cerrar" onclick="document.getElementById('modalInstalarManual').classList.remove('visible')">CERRAR</button>
+        </div>
+    </div>
 
     <!-- Modal de Progreso -->
     <div class="modal-progreso" id="modalProgreso">
@@ -1407,44 +1447,46 @@
     <!-- Modal de Instrucciones -->
     <div class="modal-instrucciones" id="modalInstrucciones">
         <div class="instrucciones-contenido">
-            <h2 class="instrucciones-titulo">Como Jugar</h2>
+            <h2 class="instrucciones-titulo">Cómo Jugar</h2>
             <p class="instrucciones-subtitulo">Lee atentamente antes de comenzar</p>
 
             <div class="instrucciones-seccion">
-                <h3><span class="icono-seccion">&#x25C9;</span> TU MISION</h3>
-                <p>Se han abierto <strong>7 portales</strong> entre el mundo de la Tragantia y Cazorla. Debes encontrar cada portal, llegar hasta el y superar sus pruebas para sellarlo.</p>
+                <h3><span class="icono-seccion">&#x25C9;</span> TU MISIÓN</h3>
+                <p>Se han abierto <strong>7 portales</strong> entre el mundo de la Tragantía y Cazorla. Debes encontrar cada portal, llegar hasta él y superar sus pruebas para sellarlo.</p>
             </div>
 
             <div class="instrucciones-seccion">
                 <h3><span class="icono-seccion">&#x25CE;</span> LOS 7 PORTALES</h3>
-                <p>Deberas encontrar y sellar <strong>7 portales</strong> repartidos por Cazorla. Tu radar GPS te guiara hasta cada uno de ellos. Las ubicaciones son secretas... solo tu dispositivo conoce el camino.</p>
+                <p>Deberás encontrar y sellar <strong>7 portales</strong> repartidos por Cazorla. Tu radar GPS te guiará hasta cada uno de ellos. Las ubicaciones son secretas... solo tu dispositivo conoce el camino.</p>
             </div>
 
             <div class="instrucciones-seccion">
-                <h3><span class="icono-seccion">&#x2606;</span> PUNTUACION</h3>
-                <p>La puntuacion premia principalmente <strong>acertar las respuestas</strong>:</p>
+                <h3><span class="icono-seccion">&#x2606;</span> PUNTUACIÓN</h3>
+                <p>La puntuación premia principalmente <strong>acertar las respuestas</strong>:</p>
                 <table class="puntuacion-tabla">
                     <tr><td>Respuesta correcta</td><td>+100 pts</td></tr>
                     <tr><td>Respuesta incorrecta</td><td>-25 pts</td></tr>
-                    <tr><td>Bonus por rapidez</td><td>+1 a +20 pts</td></tr>
+                    <tr><td>Bonus por rapidez</td><td>+5 a +20 pts</td></tr>
                     <tr><td>Completar portal</td><td>+50 pts</td></tr>
-                    <tr><td>Pista (elimina una opcion)</td><td>-30 pts</td></tr>
+                    <tr><td>Pista (elimina una opción)</td><td>-30 pts</td></tr>
                 </table>
-                <p style="font-size: 0.8em; color: #666;">El bonus de rapidez es menor comparado con acertar. Piensa bien tus respuestas.</p>
+                <p style="font-size: 0.85em; color: #a39d93;">El bonus de rapidez es menor comparado con acertar. Piensa bien tus respuestas.</p>
             </div>
 
             <div class="instrucciones-seccion">
                 <h3><span class="icono-seccion">&#x2726;</span> RELIQUIAS Y LOGROS</h3>
-                <p>Cada portal sellado te entrega una <strong>reliquia</strong> de la leyenda. Reune las 7 y desbloquea <strong>logros</strong> por jugar rapido, sin fallos o sin pistas. Al final obtendras tu <strong>rango</strong> de guardian. Consultalo todo en el boton <strong>&#x1F392;</strong> del zurron.</p>
+                <p>Cada portal sellado te entrega una <strong>reliquia</strong> de la leyenda. Reúne las 7 y desbloquea <strong>logros</strong> por jugar rápido, sin fallos o sin pistas. Al final obtendrás tu <strong>rango</strong> de guardián. Consúltalo todo en el botón <strong>&#x1F392;</strong> del zurrón.</p>
             </div>
 
             <div class="instrucciones-seccion">
                 <h3><span class="icono-seccion">&#x25A0;</span> CONSEJOS</h3>
                 <ul>
-                    <li>Activa el <strong>GPS</strong> de tu movil</li>
-                    <li>Sujeta el movil boca arriba, como una brujula: la <strong>flecha del radar</strong> apunta al portal segun hacia donde mires</li>
+                    <li>Activa el <strong>GPS</strong> de tu móvil</li>
+                    <li>Sujeta el móvil boca arriba, como una brújula: la <strong>flecha del radar</strong> apunta al portal según hacia dónde mires</li>
                     <li>Usa <strong>auriculares</strong> para mejor experiencia</li>
                     <li>Observa bien el entorno para encontrar las respuestas</li>
+                    <li>Si al llegar el GPS no te detecta, espera unos segundos: aparecerá el botón <strong>"Estoy frente al portal"</strong></li>
+                    <li>¿Prefieres jugar sin sustos ni destellos? Actívalo en el <strong>&#x1F392; zurrón</strong></li>
                     <li>Puedes pausar y continuar en cualquier momento</li>
                 </ul>
             </div>
@@ -1460,15 +1502,23 @@
         const PORTALES = [
             { id: 1, nombre: "Plaza de la Corredera", archivo: "plaza-corredera.html", key: "portal1" },
             { id: 2, nombre: "Convento de la Merced", archivo: "convento-merced.html", key: "portal2" },
-            { id: 3, nombre: "Balcon de Zabaleta", archivo: "balcon-zabaleta.html", key: "portal3" },
+            { id: 3, nombre: "Balcón de Zabaleta", archivo: "balcon-zabaleta.html", key: "portal3" },
             { id: 4, nombre: "Puerta de los Deseos", archivo: "puerta-deseos.html", key: "portal4" },
-            { id: 5, nombre: "Plaza de Santa Maria", archivo: "plaza-santa-maria.html", key: "portal5" },
+            { id: 5, nombre: "Plaza de Santa María", archivo: "plaza-santa-maria.html", key: "portal5" },
             { id: 6, nombre: "Molino Harinero", archivo: "rio-tragantia.html", key: "portal6" },
             { id: 7, nombre: "Puerta Norte Castillo", archivo: "guarida-tragantia.html", key: "portal7" }
         ];
 
+        function verInformacion() {
+            document.body.classList.remove('modo-jugador');
+            window.scrollTo(0, 0);
+        }
+
         window.onload = function() {
             const progreso = localStorage.getItem('tragantia_progreso');
+            const instalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (progreso || instalada) document.body.classList.add('modo-jugador');
+            if (progreso) document.querySelector('.acceso-section .seccion-subtitulo').textContent = 'Tu misión continúa';
             if (progreso) {
                 document.getElementById('seccion-codigo').style.display = 'none';
                 document.getElementById('seccion-reanudar').style.display = 'block';
@@ -1537,6 +1587,7 @@
                     btnReanudar.textContent = 'Entrar al Portal ' + siguiente.id;
                 } else {
                     paso.textContent = '▶ Siguiente destino: ' + siguiente.nombre;
+                    btnReanudar.textContent = 'Continuar · Portal ' + siguiente.id;
                 }
             }
 
@@ -1555,7 +1606,7 @@
         }
 
         function validarAcceso() {
-            const input = document.getElementById('codigo-input').value.trim().toLowerCase();
+            const input = document.getElementById('codigo-input').value.replace(/\s+/g, '').toLowerCase();
             const codigosLower = CODIGOS_VALIDOS.map(c => c.toLowerCase());
             if (typeof CODIGOS_VALIDOS !== 'undefined' && codigosLower.includes(input)) {
                 // Partida nueva: limpia reliquias, logros y puntos de una partida anterior
@@ -1564,7 +1615,9 @@
                 if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
                 abrirInstrucciones();
             } else {
-                document.getElementById('error-msg').style.display = 'block';
+                const error = document.getElementById('error-msg');
+                error.textContent = input ? 'Código no válido. Revisa el email de CazorlaTravel.' : 'Escribe el código que recibiste por email.';
+                error.style.display = 'block';
                 const inputEl = document.getElementById('codigo-input');
                 inputEl.classList.remove('error');
                 void inputEl.offsetWidth;
@@ -1588,7 +1641,7 @@
         }
 
         function borrarProgreso() {
-            if (confirm("Se borraran todos los datos. Deberas meter el codigo de nuevo.")) {
+            if (confirm("Se borrarán todos los datos. Deberás introducir el código de nuevo.")) {
                 Juego.evento('borrado_progreso');
                 const pendientes = localStorage.getItem('tragantia_eventos_pendientes');
                 localStorage.clear();
@@ -1655,6 +1708,8 @@
             });
 
             document.getElementById('totalPuntosValor').textContent = totalPuntos;
+            const pendientes = PORTALES.length - Juego.portalesCompletados().length;
+            document.querySelector('.progreso-subtitulo').textContent = pendientes === 0 ? 'Todos los portales sellados' : pendientes + (pendientes === 1 ? ' portal por sellar' : ' portales por sellar');
         }
 
         // Registrar Service Worker

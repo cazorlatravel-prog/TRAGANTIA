@@ -97,7 +97,6 @@
         .jg-btn-zurron { position: fixed; top: 16px; left: 16px; z-index: 180; background: #1a1a1a; border: 1.5px solid #d4a574; border-radius: 20px; padding: 6px 14px; color: #d4a574; font-family: 'VT323', monospace; font-size: 0.95em; letter-spacing: 1px; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
         .jg-btn-zurron.jg-latido { animation: jg-latido 0.6s ease 2; }
         @keyframes jg-latido { 50% { transform: scale(1.15); border-color: #39ff14; color: #39ff14; } }
-        .hud-overlay { top: 44px; }
         .jg-capa { display: none; position: fixed; inset: 0; z-index: 9550; background: #050505; overflow-y: auto; padding: 24px 18px; -webkit-overflow-scrolling: touch; }
         .jg-capa.activa { display: block; }
         .jg-caja { max-width: 440px; margin: 0 auto; }
@@ -144,11 +143,124 @@
         .jg-aviso .jg-nom { font-family: 'Orbitron', sans-serif; color: #f0e6d3; font-size: 0.75em; letter-spacing: 1px; }
         @keyframes jg-aviso { 0% { opacity: 0; transform: translateY(-20px); } 10%, 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); } }
         .jg-btn-pista { display: block; width: 100%; margin-top: 14px; padding: 12px; background: transparent; border: 1.5px dashed #f5c842; border-radius: 8px; color: #f5c842; font-family: 'Orbitron', sans-serif; font-size: 0.68em; letter-spacing: 2px; cursor: pointer; }
-        .jg-btn-pista:disabled { opacity: 0.35; cursor: default; }
+        .jg-btn-pista:disabled { cursor: default; }
         .jg-pista-texto { font-family: 'VT323', monospace; color: #f5c842; text-align: center; margin-top: 10px; letter-spacing: 1px; }
         .btn-opcion.opcion-eliminada { opacity: 0.25 !important; text-decoration: line-through; pointer-events: none !important; }
         .rumbo-flecha.jg-alineada { color: #39ff14 !important; text-shadow: 0 0 12px rgba(57,255,20,0.8) !important; }
         .jg-resumen-final { margin: 10px 0 18px; text-align: left; }
+
+        /* ===== Revisión de diseño y usabilidad ===== */
+        :root { --st-gray: #8f8a82; --jg-texto-2: #c9c2b6; --jg-texto-3: #a39d93; --jg-rojo-texto: #ff4d58; }
+
+        /* Radar: sin solapes con los botones flotantes, con scroll en pantallas pequeñas y círculo sin deformar */
+        .pantalla-radar { justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding-top: calc(68px + env(safe-area-inset-top)); padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+        .pantalla-radar > * { flex-shrink: 0; }
+        .pantalla-radar > .header-mision { margin-top: auto; }
+        .pantalla-radar > :last-child { margin-bottom: auto; }
+        .radar-container { width: min(240px, 34vh); height: min(240px, 34vh); flex-shrink: 0; }
+        .punto-objetivo { transition: left 0.6s ease, top 0.6s ease; }
+        .rumbo-indicador { font-size: 1.35em; }
+        .rumbo-flecha { font-size: 1.8em; }
+        .valor-distancia { color: #fff; text-shadow: 0 0 2px var(--accent), 0 0 14px var(--accent-glow); }
+        .numero-brecha, .subtitulo-objetivo, .etiqueta-distancia, .intensidad-label, .precision-gps, .mensaje-gps, .aviso-reanudar p, .hud-texto { font-size: 1.1rem; letter-spacing: 0.08em; }
+        .precision-gps { color: var(--jg-texto-3); }
+        .hud-texto { opacity: 1; }
+        .btn-iniciar { min-height: 52px; }
+        .btn-iniciar.jg-secundario { background: transparent; border: 1.5px solid #4a4a4a; color: var(--jg-texto-3); box-shadow: none; }
+        .aviso-reanudar { margin: 14px 0 0; }
+        .btn-reanudar-quiz { min-height: 48px; border-radius: 8px; font-size: 0.75em; }
+        .jg-llegada-manual { display: none; margin-top: 14px; padding: 14px 18px; border: 1.5px dashed var(--st-green, #39ff14); border-radius: 10px; text-align: center; max-width: 340px; }
+        .jg-llegada-manual.visible { display: block; }
+        .jg-llegada-manual p { font-family: 'VT323', monospace; color: var(--jg-texto-2); font-size: 1.05rem; margin-bottom: 10px; }
+        .jg-llegada-manual button { min-height: 48px; width: 100%; background: #39ff14; color: #0a0a0a; border: none; border-radius: 8px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.75em; letter-spacing: 1px; cursor: pointer; }
+
+        /* Botones flotantes y zonas táctiles de al menos 44 px */
+        .jg-btn-zurron, .btn-puntuacion-flotante { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; font-size: 1.1rem; border-radius: 999px; }
+        .jg-btn-zurron { top: calc(12px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); }
+        .btn-puntuacion-flotante { top: calc(12px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right)); }
+        .delta-puntos { top: calc(62px + env(safe-area-inset-top)); z-index: 205; }
+        .jg-avisos { top: calc(12px + env(safe-area-inset-top)); }
+        .hud-overlay { top: calc(56px + env(safe-area-inset-top)); }
+        .btn-silenciar, .btn-repetir, .jg-btn-saltar { min-height: 44px; padding: 0 14px; }
+        .narrativo-controles { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-salir, .jg-btn-pista, .jg-btn-cerrar, .btn-cerrar-puntuacion, .btn-cerrar-modal { min-height: 48px; }
+
+        /* Visor: sin solapes y con la zona inferior segura */
+        .btn-activar-camara { top: 66%; }
+        .btn-resolver { bottom: calc(110px + env(safe-area-inset-bottom)); min-width: 70%; min-height: 60px; }
+        .footer-info { bottom: calc(18px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 10px; width: calc(100% - 32px); }
+        .footer-info button { white-space: nowrap; padding: 0 12px; letter-spacing: 0; flex: 0 1 auto; }
+        .panel-narrativo { background: rgba(10,10,10,0.97); padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+        .narrativo-texto { font-size: 1rem; color: var(--jg-texto-2); line-height: 1.65; }
+        .jg-btn-saltar { background: #1a1a1a; border: 1px solid #4a4a4a; border-radius: 6px; color: var(--jg-texto-2); font-family: 'VT323', monospace; font-size: 0.95em; cursor: pointer; }
+        .jg-btn-historia { display: none; background: transparent; border: 1px solid #4a4a4a; border-radius: 6px; color: var(--jg-texto-3); min-height: 48px; padding: 0 16px; font-family: 'VT323', monospace; font-size: 0.95em; cursor: pointer; }
+        .jg-btn-historia.visible { display: block; }
+        .video-camara { filter: contrast(1.5) brightness(0.35) sepia(0.7) hue-rotate(-15deg) saturate(5); }
+        .visor-reves, .modal-quiz { animation: jg-entrada 0.7s ease-out; }
+        @keyframes jg-entrada { from { opacity: 0; filter: brightness(3) blur(6px); } to { opacity: 1; filter: none; } }
+
+        /* Quiz: lectura, respuesta visible al fallar y bonus de rapidez a la vista */
+        .modal-quiz, .modal-puntuacion, .pantalla-verdad, .pantalla-puntuacion { padding-top: calc(20px + env(safe-area-inset-top)); padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+        .quiz-pregunta, .btn-opcion { font-size: 1rem; line-height: 1.6; }
+        .btn-opcion { color: var(--jg-texto-2); min-height: 56px; }
+        .btn-opcion.correcta::before { content: '✓ '; font-weight: bold; }
+        .btn-opcion.incorrecta::before { content: '✗ '; font-weight: bold; }
+        .modal-quiz.jg-sacudida { animation: jg-sacudir 0.45s ease; box-shadow: inset 0 0 90px rgba(228,9,20,0.55); }
+        @keyframes jg-sacudir { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+        .jg-bonus { font-family: 'VT323', monospace; font-size: 1.15rem; text-align: center; margin: -6px 0 12px; color: #f5c842; letter-spacing: 0.05em; }
+        .jg-bonus.sin-bonus { color: var(--jg-texto-3); }
+        .jg-btn-pista { font-size: 0.8125rem; letter-spacing: 0.08em; }
+        .jg-btn-pista:disabled { opacity: 1; color: var(--jg-texto-3); border-color: #4a4a4a; }
+
+        /* Éxito del portal: una cifra clara y el siguiente destino */
+        .exito-puntos { font-size: 1.3em !important; }
+        .jg-proximo { margin: 4px 0 14px; padding: 12px 16px; border: 1px solid #333; border-radius: 10px; background: #111; text-align: center; width: 100%; max-width: 360px; }
+        .jg-proximo small { display: block; font-family: 'Orbitron', sans-serif; font-size: 0.7em; letter-spacing: 0.15em; color: var(--jg-texto-3); margin-bottom: 4px; }
+        .jg-proximo strong { font-family: 'Special Elite', cursive; font-size: 1.15em; color: #f0e6d3; font-weight: normal; }
+        .btn-siguiente, #pantallaExito .btn-finalizar { width: 100%; max-width: 360px; min-height: 56px; }
+
+        /* Pantalla final: etiquetas legibles */
+        .stat-label, .stat-box .stat-label, .puntuacion-label { font-size: 0.75rem; letter-spacing: 0.1em; color: var(--jg-texto-3); }
+        .rango-titulo { font-size: 1.6em; }
+        .btn-red { width: 52px; height: 52px; }
+        .jg-btn-compartir { width: 100%; min-height: 56px; margin: 6px 0 4px; background: #39ff14; border: none; border-radius: 8px; color: #0a0a0a; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.8em; letter-spacing: 1px; cursor: pointer; }
+
+        /* Zurrón: legible, con cierre siempre visible y opción sin sustos */
+        .jg-subtitulo { color: var(--jg-texto-3); letter-spacing: 1px; }
+        .jg-seccion { font-size: 0.75rem; letter-spacing: 0.15em; }
+        .jg-reliquia .jg-nom { font-size: 0.95em; }
+        .jg-reliquia.bloqueada .jg-nom { color: #8f8a82; }
+        .jg-logro .jg-des { color: var(--jg-texto-3); font-size: 1.05em; }
+        .jg-logro.bloqueado { opacity: 1; }
+        .jg-logro.bloqueado .jg-ico { opacity: 0.35; }
+        .jg-logro.bloqueado .jg-nom { color: var(--jg-texto-3); }
+        .jg-logro.bloqueado .jg-des { color: #8f8a82; }
+        .jg-rev-contador, .jg-rev-desc { color: var(--jg-texto-2); }
+        .jg-rev-btn { min-height: 52px; font-size: 0.8em; }
+        .jg-x { position: sticky; top: 0; float: right; z-index: 2; width: 44px; height: 44px; margin: -8px -4px 0 0; background: #111; border: 1px solid #4a4a4a; border-radius: 50%; color: #f0e6d3; font-size: 1.2em; cursor: pointer; }
+        .jg-ajuste { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #111; border: 1px solid #333; border-radius: 10px; cursor: pointer; }
+        .jg-ajuste span { font-family: 'Special Elite', cursive; color: var(--jg-texto-2); font-size: 0.95em; line-height: 1.4; }
+        .jg-ajuste input { width: 24px; height: 24px; accent-color: #39ff14; flex-shrink: 0; }
+
+        /* Accesibilidad: foco visible */
+        :focus-visible { outline: 2px solid #f5c842; outline-offset: 3px; }
+        .btn-opcion:focus-visible { outline-offset: -2px; }
+
+        /* Modo sin sustos (manual) y movimiento reducido del sistema */
+        .jg-sin-sustos .efecto-susto.activo { animation: none !important; opacity: 0 !important; }
+        .jg-sin-sustos .video-camara { filter: contrast(1.5) brightness(0.35) sepia(0.7) hue-rotate(-15deg) saturate(5) !important; }
+        @media (prefers-reduced-motion: reduce) {
+            .efecto-susto.activo { animation: none !important; opacity: 0 !important; }
+            .video-camara { filter: contrast(1.5) brightness(0.35) sepia(0.7) hue-rotate(-15deg) saturate(5) !important; }
+            .numero-brecha, .hud-alerta, .texto-brecha, .buscar-mensaje, .radar-sweep, .radar-sweep-hex, .radar-sweep-final,
+            .punto-objetivo, .brecha-icon.activa, .barra-energia-fill, .portal-visual, .buscar-indicador, .capa-esporas,
+            .hero-badge, .hero h1, .hero-portales-count, .cta-comprar::after, .hero-scroll, body::after, .btn-instalar,
+            .ruta-nodo.actual, .jg-rev-icono, .visor-reves, .modal-quiz, .modal-quiz.jg-sacudida { animation: none !important; }
+            .jg-aviso { animation-name: jg-aviso-suave !important; }
+            html { scroll-behavior: auto; }
+        }
+        @keyframes jg-aviso-suave { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
         `;
         const estilo = document.createElement('style');
         estilo.id = 'jg-estilos';
@@ -315,13 +427,31 @@
         }
         const nLogros = Object.keys(logrosObtenidos()).length;
         capa.innerHTML = '<div class="jg-caja">' +
+            '<button class="jg-x" onclick="Juego.cerrarInventario()" aria-label="Cerrar el zurrón">✕</button>' +
             '<h2 class="jg-titulo">🎒 Tu Zurrón</h2>' +
             '<p class="jg-subtitulo">RELIQUIAS ' + portalesCompletados().length + '/7 · LOGROS ' + nLogros + '/' + LOGROS.length + '</p>' +
             '<p class="jg-seccion">RANGO ACTUAL</p>' + htmlRango() +
             '<p class="jg-seccion">RELIQUIAS</p>' + htmlReliquias() +
             '<p class="jg-seccion">LOGROS</p>' + htmlLogros(false) +
+            '<p class="jg-seccion">AJUSTES</p>' +
+            '<label class="jg-ajuste"><span>Modo sin sustos: sin destellos ni sonidos de susto</span>' +
+            '<input type="checkbox" id="jgSinSustos"' + (sinSustos() ? ' checked' : '') + '></label>' +
             '<button class="jg-btn-cerrar" onclick="Juego.cerrarInventario()">CERRAR</button></div>';
+        capa.querySelector('#jgSinSustos').addEventListener('change', e => fijarSinSustos(e.target.checked));
         capa.classList.add('activa');
+    }
+
+    // === MODO SIN SUSTOS ===
+    function sinSustos() { return leer('tragantia_sin_sustos', '') === 'true'; }
+    function aplicarSinSustos() {
+        const activo = sinSustos();
+        document.documentElement.classList.toggle('jg-sin-sustos', activo);
+        const audio = document.getElementById('audioSusto');
+        if (audio) audio.muted = activo;
+    }
+    function fijarSinSustos(activo) {
+        escribir('tragantia_sin_sustos', activo ? 'true' : 'false');
+        aplicarSinSustos();
     }
     function cerrarInventario() {
         const capa = document.getElementById('jgInventario');
@@ -331,6 +461,7 @@
         const btn = document.getElementById('jgBtnZurron');
         if (!btn) return;
         btn.textContent = '🎒 ' + portalesCompletados().length + '/7';
+        btn.setAttribute('aria-label', 'Zurrón: ' + portalesCompletados().length + ' de 7 reliquias');
         if (latir) { btn.classList.remove('jg-latido'); void btn.offsetWidth; btn.classList.add('jg-latido'); }
     }
 
@@ -373,7 +504,44 @@
         evento('busqueda_inicio');
     }
 
+    // El GPS en calles estrechas falla 15-30 m: se amplía el radio con la precisión (máx. +15 m).
+    function radioEfectivo(radio, precision) {
+        return radio + Math.min(Math.max(precision || 0, 0), 15);
+    }
+
+    // Si el jugador lleva 20 s a menos de 40 m sin que el GPS lo detecte, se le ofrece entrar a mano.
+    let cercaDesde = null;
+    function vigilarLlegada(distancia, alConfirmar) {
+        const caja = asegurarLlegadaManual(alConfirmar);
+        if (!caja) return;
+        if (distancia > 40) { cercaDesde = null; return; }
+        if (cercaDesde === null) cercaDesde = Date.now();
+        if (Date.now() - cercaDesde > 20000 && !caja.classList.contains('visible')) {
+            caja.classList.add('visible');
+            vibrar(40);
+        }
+    }
+    function asegurarLlegadaManual(alConfirmar) {
+        let caja = document.getElementById('jgLlegadaManual');
+        if (caja) return caja;
+        const ancla = document.getElementById('mensajeGps');
+        if (!ancla) return null;
+        caja = document.createElement('div');
+        caja.id = 'jgLlegadaManual';
+        caja.className = 'jg-llegada-manual';
+        caja.innerHTML = '<p>¿Ya estás en el lugar y el radar no te detecta? El GPS falla entre edificios.</p><button type="button">📍 ESTOY FRENTE AL PORTAL</button>';
+        caja.querySelector('button').addEventListener('click', () => {
+            caja.classList.remove('visible');
+            evento('llegada_manual');
+            alConfirmar();
+        });
+        ancla.insertAdjacentElement('afterend', caja);
+        return caja;
+    }
+
     function marcarLlegada() {
+        const caja = document.getElementById('jgLlegadaManual');
+        if (caja) caja.classList.remove('visible');
         if (obtenerFase()) return;
         guardarFase('llegada');
         const inicio = parseInt(leer(clavePortal('busqueda'), '0'), 10);
@@ -407,6 +575,11 @@
         } else {
             return;
         }
+        const btnIniciar = document.getElementById('btnIniciar');
+        if (btnIniciar) {
+            btnIniciar.parentNode.insertBefore(aviso, btnIniciar);
+            btnIniciar.classList.add('jg-secundario');
+        }
         aviso.style.display = 'block';
     }
 
@@ -433,15 +606,16 @@
             btn.disabled = true;
             btn.textContent = '💡 PISTA USADA';
         }
+        iniciarIndicadorBonus(contenedor);
         if (guardada && guardada.pregunta === indicePregunta) { eliminar(guardada.eliminada); return; }
 
         btn.addEventListener('click', () => {
             const incorrectas = [];
-            botones.forEach((b, i) => { if (i !== pregunta.correcta) incorrectas.push(i); });
-            if (!incorrectas.length) return;
+            botones.forEach((b, i) => { if (i !== pregunta.correcta && !b.classList.contains('opcion-eliminada')) incorrectas.push(i); });
+            if (!incorrectas.length) { btn.disabled = true; btn.textContent = '💡 YA SOLO QUEDA LA CORRECTA'; return; }
             const resultado = alUsar(COSTE_PISTA);
             if (resultado === 'sin_puntos') {
-                btn.textContent = '💡 NECESITAS ' + COSTE_PISTA + ' PTS EN ESTE PORTAL';
+                btn.textContent = '💡 ACIERTA UNA PREGUNTA PARA DESBLOQUEAR PISTAS';
                 setTimeout(() => { if (!btn.disabled) btn.textContent = textoBoton; }, 2500);
                 return;
             }
@@ -463,6 +637,13 @@
         if (!correcta) {
             fallosPreguntaActual++;
             escribir('tragantia_racha', '0');
+            const quiz = document.getElementById('modalQuiz');
+            if (quiz) {
+                quiz.classList.remove('jg-sacudida'); void quiz.offsetWidth; quiz.classList.add('jg-sacudida');
+                setTimeout(() => quiz.classList.remove('jg-sacudida'), 500);
+            }
+            const fallada = document.querySelector('.btn-opcion.incorrecta');
+            if (fallada) setTimeout(() => fallada.classList.add('opcion-eliminada'), 1050);
             return;
         }
         if (segundos < 10) desbloquearLogro('relampago');
@@ -473,6 +654,33 @@
             if (racha >= 5) desbloquearLogro('racha');
         }
         fallosPreguntaActual = 0;
+    }
+
+    // Muestra bajo el cronómetro cuánto bonus de rapidez queda en la pregunta actual.
+    let intervaloBonus = null;
+    function iniciarIndicadorBonus(contenedor) {
+        let indicador = document.getElementById('jgBonus');
+        if (!indicador) {
+            const reloj = document.getElementById('quizTimer');
+            if (!reloj) return;
+            indicador = document.createElement('div');
+            indicador.id = 'jgBonus';
+            indicador.className = 'jg-bonus';
+            indicador.setAttribute('aria-live', 'off');
+            reloj.insertAdjacentElement('afterend', indicador);
+        }
+        const inicio = Date.now();
+        const tramos = [[15, 20], [30, 15], [60, 10], [120, 5]];
+        const pintar = () => {
+            if (!contenedor.isConnected || contenedor.style.display === 'none') { clearInterval(intervaloBonus); return; }
+            const s = (Date.now() - inicio) / 1000;
+            const tramo = tramos.find(x => s < x[0]);
+            indicador.classList.toggle('sin-bonus', !tramo);
+            indicador.textContent = tramo ? '⚡ Bonus rapidez +' + tramo[1] + ' · ' + Math.ceil(tramo[0] - s) + ' s' : 'Sin bonus de rapidez';
+        };
+        clearInterval(intervaloBonus);
+        pintar();
+        intervaloBonus = setInterval(pintar, 500);
     }
 
     const erroresGpsRegistrados = new Set();
@@ -500,8 +708,27 @@
         if (!datos.incorrectas) desbloquearLogro('impecable');
         if (hora >= 21 || hora < 6) desbloquearLogro('nocturno');
         if (portalesCompletados().length === 7) desbloquearLogro('coleccionista');
-        mostrarRevelacionReliquia(portalActual, alCerrarReliquia);
+        clearInterval(intervaloBonus);
+        prepararPantallaExito();
+        setTimeout(() => mostrarRevelacionReliquia(portalActual, alCerrarReliquia), 1500);
         actualizarBotonZurron(false);
+    }
+
+    function prepararPantallaExito() {
+        const cabecera = document.querySelector('#modalQuiz .quiz-header');
+        if (cabecera) cabecera.style.display = 'none';
+        const exito = document.getElementById('pantallaExito');
+        const siguiente = PORTALES[portalActual];
+        if (!exito || !siguiente) return;
+        const boton = exito.querySelector('[onclick*="siguientePunto"]');
+        if (!boton || document.getElementById('jgProximo')) return;
+        const proximo = document.createElement('div');
+        proximo.id = 'jgProximo';
+        proximo.className = 'jg-proximo';
+        proximo.innerHTML = '<small>PRÓXIMO PORTAL · ' + siguiente.num + '/7</small><strong>' + siguiente.nombre + '</strong>';
+        boton.parentNode.insertBefore(proximo, boton);
+        boton.textContent = 'Ir al portal ' + siguiente.num + ' →';
+        exito.scrollIntoView({ block: 'start' });
     }
 
     // === FIN DE LA MISIÓN (portal 7) ===
@@ -534,7 +761,7 @@
 
     // === NUEVA PARTIDA (index.html, al validar el código) ===
     function nuevaPartida() {
-        const conservar = ['tragantia_eventos_pendientes', 'tragantia_auth'];
+        const conservar = ['tragantia_eventos_pendientes', 'tragantia_auth', 'tragantia_sin_sustos'];
         const claves = [];
         try {
             for (let i = 0; i < localStorage.length; i++) {
@@ -580,7 +807,19 @@
                 escuchar();
             }
         }
-        function fijarRumbo(nuevoRumbo) { rumbo = nuevoRumbo; programarPintado(); }
+        function fijarRumbo(nuevoRumbo, distancia) {
+            rumbo = nuevoRumbo;
+            colocarPuntoRadar(nuevoRumbo, distancia);
+            programarPintado();
+        }
+        function colocarPuntoRadar(r, distancia) {
+            const punto = document.getElementById('puntoObjetivo');
+            if (!punto || typeof distancia !== 'number') return;
+            const radio = Math.min(distancia / 300, 1) * 42;
+            const ang = (r - 90) * Math.PI / 180;
+            punto.style.left = (50 + Math.cos(ang) * radio) + '%';
+            punto.style.top = (50 + Math.sin(ang) * radio) + '%';
+        }
         function programarPintado() {
             if (pintadoPendiente) return;
             pintadoPendiente = true;
@@ -611,6 +850,49 @@
         return { activar: activar, fijarRumbo: fijarRumbo };
     })();
 
+    function prepararPortal(num) {
+        aplicarSinSustos();
+
+        // Contador del HUD: siempre 7 brechas, marcando las selladas y la actual
+        document.querySelectorAll('.contador-brechas').forEach(c => {
+            c.innerHTML = PORTALES.map(p => '<div class="brecha-icon' + (portalCompletado(p.num) ? ' sellada' : (p.num === num ? ' activa' : '')) + '"></div>').join('');
+        });
+
+        // Saltar la narración y volver a escucharla cuando el panel ya se ha cerrado
+        const controles = document.querySelector('.narrativo-controles');
+        if (controles && typeof window.saltarNarracion === 'function') {
+            const saltar = document.createElement('button');
+            saltar.type = 'button';
+            saltar.className = 'jg-btn-saltar';
+            saltar.textContent = 'Saltar ▸';
+            saltar.addEventListener('click', () => window.saltarNarracion());
+            controles.appendChild(saltar);
+        }
+        const pie = document.querySelector('.footer-info');
+        const panel = document.getElementById('panelNarrativo');
+        if (pie && panel && typeof window.repetirNarracion === 'function') {
+            const historia = document.createElement('button');
+            historia.type = 'button';
+            historia.className = 'jg-btn-historia';
+            historia.textContent = '🔄 Historia';
+            historia.addEventListener('click', () => window.repetirNarracion());
+            pie.prepend(historia);
+            const sincronizar = () => historia.classList.toggle('visible', !panel.classList.contains('activo') && document.getElementById('btnResolver').style.display === 'block');
+            new MutationObserver(sincronizar).observe(panel, { attributes: true, attributeFilter: ['class'] });
+            const resolver = document.getElementById('btnResolver');
+            if (resolver) new MutationObserver(sincronizar).observe(resolver, { attributes: true, attributeFilter: ['style'] });
+        }
+
+        // Nombres accesibles para botones que solo tienen emoji
+        const etiquetas = { compartirWhatsApp: 'Compartir en WhatsApp', compartirTwitter: 'Compartir en X', compartirFacebook: 'Compartir en Facebook', copiarEnlace: 'Copiar enlace' };
+        document.querySelectorAll('.btn-red').forEach(b => {
+            const accion = Object.keys(etiquetas).find(k => (b.getAttribute('onclick') || '').indexOf(k) === 0);
+            if (accion) b.setAttribute('aria-label', etiquetas[accion]);
+        });
+        const puntos = document.getElementById('quizPuntos');
+        if (puntos) puntos.setAttribute('aria-live', 'polite');
+    }
+
     // === INICIO EN CADA PORTAL ===
     function iniciarPortal(num) {
         portalActual = num;
@@ -623,6 +905,7 @@
             btn.addEventListener('click', abrirInventario);
             document.body.appendChild(btn);
             actualizarBotonZurron(false);
+            prepararPortal(num);
         };
         if (document.body) crearBoton(); else document.addEventListener('DOMContentLoaded', crearBoton);
     }
@@ -637,6 +920,9 @@
         evento: evento,
         brujula: brujula,
         iniciarBusqueda: iniciarBusqueda,
+        radioEfectivo: radioEfectivo,
+        vigilarLlegada: vigilarLlegada,
+        fijarSinSustos: fijarSinSustos,
         marcarLlegada: marcarLlegada,
         guardarFase: guardarFase,
         obtenerFase: obtenerFase,
