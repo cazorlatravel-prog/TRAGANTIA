@@ -224,7 +224,7 @@
         .btn-opcion.incorrecta { background: rgba(228, 9, 20, 0.1); border-color: var(--st-red); color: var(--st-red); }
 
         /* Success screen */
-        .pantalla-exito { display: none; text-align: center; padding: 40px 0; }
+        .pantalla-exito { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px 0; }
         .pantalla-exito.activo { display: block; }
         .exito-icono { font-size: 3em; color: var(--st-green); margin-bottom: 16px; }
         .exito-titulo { font-family: 'Creepster', cursive; font-size: 1.6em; color: var(--st-green); margin-bottom: 12px; text-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
@@ -462,9 +462,11 @@
     <audio id="audioPitido" src="imagenes/beep.mp3" preload="auto"></audio>
     <audio id="audioNarrativo" src="imagenes/audio-puerta-deseos.mp3" preload="auto"></audio>
 
+    <script src="juego.js"></script>
     <script>
         if (localStorage.getItem('tragantia_auth') !== 'true') window.location.href = 'index.html';
         localStorage.setItem('tragantia_progreso', 'puerta-deseos.html');
+        Juego.iniciarPortal(4);
 
         const CONFIG = {
             destino: { lat: 37.909739359534434, lng: -3.0009837979155507, radio: 10 },
@@ -497,6 +499,7 @@
                 if (estado.visorActivo) elementos.audioAmbiente.play().catch(() => {});
             } else {
                 elementos.audioAmbiente.pause();
+                if (elementos.modalQuiz.style.display === 'block' && estado.preguntaActual < CONFIG.preguntas.length) guardarEstadoQuiz();
             }
         });
 
@@ -517,10 +520,7 @@
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
         function actualizarRumbo(lat, lng) {
-            const rumbo = calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng);
-            const cardinales = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-            document.getElementById('rumboTexto').textContent = cardinales[Math.round(rumbo / 45) % 8] + ' ' + Math.round(rumbo) + '°';
-            document.getElementById('rumboFlecha').style.transform = 'rotate(' + (rumbo - 90) + 'deg)';
+            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
         }
         function actualizarTendencia(distancia) {
             const el = document.getElementById('tendenciaDistancia');
@@ -539,6 +539,25 @@
             el.classList.remove('animar');
             void el.offsetWidth;
             el.classList.add('animar');
+        }
+
+        // === PISTAS: descontar su coste ===
+        function aplicarCostePista(coste) {
+            if (estado.procesandoRespuesta) return false;
+            if (estado.puntuacionTotal < coste) return 'sin_puntos';
+            estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - coste);
+            elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-' + coste + ' pista)';
+            actualizarPuntosFlotante();
+            mostrarDeltaPuntos('-' + coste, '#f5c842');
+            guardarEstadoQuiz();
+        }
+
+        // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
+        function reanudarEnPortal(fase) {
+            elementos.audioSusto.play().then(() => elementos.audioSusto.pause()).catch(() => {});
+            solicitarWakeLock();
+            if (fase === 'narrativa') estado.narrativoMostrado = true;
+            activarVisor();
         }
 
         // === PERSISTENCIA DEL QUIZ (reanudar si se cierra a mitad) ===
@@ -569,7 +588,7 @@
             elementos.modalQuiz.style.display = 'block';
             actualizarDisplayTimer();
             if (intervaloTimer) clearInterval(intervaloTimer);
-            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000);
+            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
             actualizarPuntosFlotante();
             solicitarWakeLock();
             cargarPregunta();
@@ -625,11 +644,8 @@
             window.addEventListener('popstate', function() { history.pushState(null, null, location.href); });
             inicializarMapa();
 
-            // Detectar quiz interrumpido para ofrecer reanudación
-            const portalCompletado = localStorage.getItem('tragantia_portal4_completado') === 'true';
-            if (!portalCompletado && localStorage.getItem(CLAVE_ESTADO_QUIZ)) {
-                document.getElementById('avisoReanudar').style.display = 'block';
-            }
+            // Ofrecer reanudación si el portal se interrumpió (quiz a medias o ya llegado)
+            Juego.prepararReanudacion(CONFIG.preguntas.length, reanudarQuizGuardado, reanudarEnPortal);
         });
 
         function inicializarMapa() {
@@ -688,6 +704,8 @@
             elementos.audioPitido.play().then(() => elementos.audioPitido.pause()).catch(() => {});
             elementos.audioNarrativo.play().then(() => { elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; }).catch(() => {});
             solicitarWakeLock();
+            Juego.brujula.activar();
+            Juego.iniciarBusqueda();
             if (navigator.geolocation) {
                 elementos.btnIniciar.disabled = true;
                 elementos.btnIniciar.innerHTML = '◇ Localizando...';
@@ -710,6 +728,7 @@
         }
 
         function errorGPS(error) {
+            Juego.registrarErrorGps(error.code);
             const textos = {
                 1: '⚠ PERMISO DE UBICACIÓN DENEGADO. Actívalo en los ajustes del navegador y reintenta.',
                 2: '⚠ SEÑAL GPS NO DISPONIBLE. Muévete a cielo abierto.',
@@ -727,6 +746,7 @@
 
         function activarVisor() {
             estado.visorActivo = true;
+            Juego.marcarLlegada();
             elementos.pantallaRadar.style.display = 'none';
             elementos.visorReves.style.display = 'block';
             elementos.btnResolver.style.display = 'none';
@@ -774,6 +794,7 @@
         function finalizarNarracion() {
             if (!estado.narracionActiva) return;
             estado.narracionActiva = false;
+            Juego.guardarFase('narrativa');
             elementos.btnRepetir.classList.add('visible');
             elementos.audioAmbiente.volume = 0.4;
             setTimeout(() => { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(() => { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500);
@@ -832,7 +853,7 @@
 
         function iniciarTimerQuiz() {
             segundosTranscurridos = 0; actualizarDisplayTimer();
-            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000);
+            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
         }
         function actualizarDisplayTimer() {
             const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
@@ -860,6 +881,7 @@
             elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal; actualizarPuntosFlotante();
             elementos.quizContenido.innerHTML = `<p class="quiz-pregunta">${p.texto}</p><div class="quiz-opciones">${p.opciones.map((opt, i) => `<button class="btn-opcion" data-index="${i}">${opt}</button>`).join('')}</div>`;
             document.querySelectorAll('.btn-opcion').forEach(btn => btn.addEventListener('click', (e) => verificarRespuesta(parseInt(e.target.dataset.index))));
+            Juego.prepararPista(estado.preguntaActual, p, elementos.quizContenido, aplicarCostePista);
         }
 
         function verificarRespuesta(index) {
@@ -879,6 +901,7 @@
                 estado.puntuacionTotal += puntos + bonus;
                 estado.bonusTotal += bonus;
                 estado.respuestasCorrectas++;
+                Juego.registrarRespuesta(estado.preguntaActual, true, tiempoRespuesta);
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (+' + (puntos + bonus) + ')'; actualizarPuntosFlotante();
                 mostrarDeltaPuntos('+' + (puntos + bonus), '#39ff14');
                 setTimeout(() => {
@@ -893,6 +916,7 @@
                 vibrar([250]);
                 estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - 25);
                 estado.respuestasIncorrectas++;
+                Juego.registrarRespuesta(estado.preguntaActual, false, tiempoRespuesta);
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-25)'; actualizarPuntosFlotante();
                 mostrarDeltaPuntos('-25', '#ff5252');
                 guardarEstadoQuiz();
@@ -927,6 +951,7 @@
             localStorage.setItem('tragantia_portal4_tiempo', mins + ':' + secs);
             localStorage.setItem('tragantia_progreso', 'plaza-santa-maria.html');
             localStorage.removeItem(CLAVE_ESTADO_QUIZ);
+            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos });
             vibrar([80, 50, 80, 50, 200]);
             
             elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
@@ -937,6 +962,7 @@
         function siguientePunto() { window.location.href = 'plaza-santa-maria.html'; }
         function salirMision() {
             if (confirm('¿Abandonar misión?')) {
+                Juego.evento('salida');
                 detenerPitidos();
                 if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(t => t.stop());
                 window.location.href = 'index.html';

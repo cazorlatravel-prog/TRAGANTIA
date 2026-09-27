@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tragantia-v6';
+const CACHE_NAME = 'tragantia-v7';
 const AUDIO_CACHE = 'tragantia-audio-v2';
 
 const CORE_FILES = [
@@ -12,6 +12,7 @@ const CORE_FILES = [
     '/rio-tragantia.html',
     '/guarida-tragantia.html',
     '/codigos.js',
+    '/juego.js',
     '/manifest.json'
 ];
 
@@ -67,6 +68,8 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Las estadísticas (POST) van directas a la red, sin caché
+    if (event.request.method !== 'GET') return;
     const url = new URL(event.request.url);
     
     if (url.pathname.endsWith('.mp3')) {
@@ -94,6 +97,17 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // JS propio (juego.js, codigos.js): red primero para recibir cambios sin cambiar la versión de caché
+    if (url.origin === self.location.origin && url.pathname.endsWith('.js')) {
+        event.respondWith(
+            fetch(event.request).then(r => {
+                if (r.ok) caches.open(CACHE_NAME).then(c => c.put(event.request, r.clone()));
+                return r;
+            }).catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then(c => c || fetch(event.request).then(r => {
             if (r.ok && event.request.method === 'GET') caches.open(CACHE_NAME).then(cache => cache.put(event.request, r.clone()));

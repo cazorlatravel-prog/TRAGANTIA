@@ -696,6 +696,85 @@
             transition: width 0.8s ease;
         }
 
+        /* Pantalla de reanudación: rango, estadísticas, ruta y reliquias */
+        .reanudar-rango { margin-bottom: 14px; }
+        .reanudar-rango-nombre {
+            font-family: 'Creepster', cursive;
+            color: var(--st-yellow);
+            font-size: 1.3em;
+            letter-spacing: 1px;
+            text-shadow: 0 0 12px rgba(245, 200, 66, 0.3);
+        }
+        .reanudar-estrellas { color: var(--st-gray-dark); font-size: 1.2em; letter-spacing: 3px; }
+        .reanudar-estrellas b { color: var(--st-yellow); font-weight: normal; }
+        .reanudar-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .reanudar-stats div {
+            background: var(--st-black);
+            border: 1px solid var(--st-gray-dark);
+            border-radius: 8px;
+            padding: 8px 2px;
+        }
+        .reanudar-stats span {
+            display: block;
+            font-family: 'VT323', monospace;
+            color: var(--st-green);
+            font-size: 1.25em;
+        }
+        .reanudar-stats small {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--st-gray);
+            font-size: 0.45em;
+            letter-spacing: 1px;
+        }
+        .ruta-portales {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 4px 0 12px;
+        }
+        .ruta-nodo {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            border: 2px solid var(--st-gray-dark);
+            color: #555;
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .ruta-nodo.completado { border-color: var(--st-green); color: var(--st-green); background: rgba(57, 255, 20, 0.08); }
+        .ruta-nodo.actual { border-color: var(--st-amber); color: var(--st-amber); animation: nodo-pulso 1.6s ease-in-out infinite; }
+        @keyframes nodo-pulso { 50% { box-shadow: 0 0 12px rgba(212, 165, 116, 0.6); } }
+        .ruta-linea { flex: 1; height: 2px; background: var(--st-gray-dark); }
+        .ruta-linea.completada { background: var(--st-green); }
+        .siguiente-paso {
+            font-family: 'VT323', monospace;
+            color: var(--st-amber);
+            font-size: 1em;
+            letter-spacing: 1px;
+            margin-bottom: 14px;
+        }
+        .reliquias-etiqueta {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--st-gray);
+            font-size: 0.55em;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+        .reliquias-fila {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.4em;
+            margin-bottom: 18px;
+        }
+        .reliquias-fila .bloqueada { filter: grayscale(1) brightness(0.25); }
+
         /* Animación de error en el input de código */
         @keyframes shake-error {
             0%, 100% { transform: translateX(0); }
@@ -1277,9 +1356,23 @@
 
             <div class="acceso-box" id="seccion-reanudar" style="display:none;">
                 <p class="mision-en-curso">MISION EN CURSO</p>
-                <p class="resumen-progreso" id="resumenProgreso"></p>
+                <div class="reanudar-rango">
+                    <div class="reanudar-rango-nombre" id="reanudarRango">Sin rango</div>
+                    <div class="reanudar-estrellas" id="reanudarEstrellas"></div>
+                </div>
+                <div class="reanudar-stats">
+                    <div><span id="statSellados">0/7</span><small>PORTALES</small></div>
+                    <div><span id="statPuntos">0</span><small>PUNTOS</small></div>
+                    <div><span id="statAciertos">--</span><small>ACIERTOS</small></div>
+                    <div><span id="statTiempo">--</span><small>TIEMPO</small></div>
+                </div>
                 <div class="barra-progreso-mision"><div class="barra-progreso-mision-fill" id="barraProgresoFill"></div></div>
-                <button class="btn-validar btn-reanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
+                <div class="ruta-portales" id="rutaPortales"></div>
+                <p class="siguiente-paso" id="siguientePaso"></p>
+                <p class="reliquias-etiqueta">RELIQUIAS REUNIDAS</p>
+                <div class="reliquias-fila" id="reliquiasFila"></div>
+                <button class="btn-validar btn-reanudar" id="btnReanudar" onclick="reanudarMision()">Reanudar en el Punto Actual</button>
+                <button class="btn-progreso" id="btnZurron" onclick="Juego.abrirInventario()">🎒 Reliquias y Logros</button>
                 <button class="btn-progreso" onclick="abrirProgreso()">Ver Progreso de Portales</button>
                 <button class="btn-borrar" onclick="borrarProgreso()">Borrar datos y empezar de cero</button>
             </div>
@@ -1335,14 +1428,21 @@
                     <tr><td>Respuesta incorrecta</td><td>-25 pts</td></tr>
                     <tr><td>Bonus por rapidez</td><td>+1 a +20 pts</td></tr>
                     <tr><td>Completar portal</td><td>+50 pts</td></tr>
+                    <tr><td>Pista (elimina una opcion)</td><td>-30 pts</td></tr>
                 </table>
                 <p style="font-size: 0.8em; color: #666;">El bonus de rapidez es menor comparado con acertar. Piensa bien tus respuestas.</p>
+            </div>
+
+            <div class="instrucciones-seccion">
+                <h3><span class="icono-seccion">&#x2726;</span> RELIQUIAS Y LOGROS</h3>
+                <p>Cada portal sellado te entrega una <strong>reliquia</strong> de la leyenda. Reune las 7 y desbloquea <strong>logros</strong> por jugar rapido, sin fallos o sin pistas. Al final obtendras tu <strong>rango</strong> de guardian. Consultalo todo en el boton <strong>&#x1F392;</strong> del zurron.</p>
             </div>
 
             <div class="instrucciones-seccion">
                 <h3><span class="icono-seccion">&#x25A0;</span> CONSEJOS</h3>
                 <ul>
                     <li>Activa el <strong>GPS</strong> de tu movil</li>
+                    <li>Sujeta el movil boca arriba, como una brujula: la <strong>flecha del radar</strong> apunta al portal segun hacia donde mires</li>
                     <li>Usa <strong>auriculares</strong> para mejor experiencia</li>
                     <li>Observa bien el entorno para encontrar las respuestas</li>
                     <li>Puedes pausar y continuar en cualquier momento</li>
@@ -1354,6 +1454,7 @@
     </div>
 
     <script src="codigos.js"></script>
+    <script src="juego.js"></script>
     <script>
         // Configuracion de portales
         const PORTALES = [
@@ -1384,15 +1485,67 @@
         };
 
         function mostrarResumenProgreso() {
-            let sellados = 0, puntos = 0;
-            for (let i = 1; i <= 7; i++) {
-                if (localStorage.getItem('tragantia_portal' + i + '_completado') === 'true') {
-                    sellados++;
-                    puntos += parseInt(localStorage.getItem('tragantia_portal' + i + '_puntos') || '0');
+            const completados = Juego.portalesCompletados();
+            const sellados = completados.length;
+            const puntos = Juego.puntosTotales();
+
+            // Rango actual
+            if (sellados > 0) {
+                const rango = Juego.calcularRango(puntos, completados);
+                document.getElementById('reanudarRango').textContent = rango.titulo;
+                document.getElementById('reanudarEstrellas').innerHTML = Juego.htmlEstrellas(rango.estrellas);
+            } else {
+                document.getElementById('reanudarRango').textContent = 'Sin rango aún';
+                document.getElementById('reanudarEstrellas').textContent = 'Sella tu primer portal';
+            }
+
+            // Estadísticas
+            const correctas = parseInt(localStorage.getItem('tragantia_correctas_total') || '0');
+            const incorrectas = parseInt(localStorage.getItem('tragantia_incorrectas_total') || '0');
+            document.getElementById('statSellados').textContent = sellados + '/7';
+            document.getElementById('statPuntos').textContent = puntos;
+            document.getElementById('statAciertos').textContent = (correctas + incorrectas) > 0 ? Math.round(correctas / (correctas + incorrectas) * 100) + '%' : '--';
+            const segundos = Juego.tiempoMisionSegundos();
+            document.getElementById('statTiempo').textContent = segundos > 0 ? Juego.formatearTiempo(segundos) : '--';
+            document.getElementById('barraProgresoFill').style.width = Math.round(sellados / 7 * 100) + '%';
+
+            // Ruta de portales
+            const siguiente = PORTALES.find(p => completados.indexOf(p.id) === -1);
+            document.getElementById('rutaPortales').innerHTML = PORTALES.map((p, i) => {
+                const hecho = completados.indexOf(p.id) !== -1;
+                const clase = hecho ? 'completado' : (siguiente && p.id === siguiente.id ? 'actual' : '');
+                const linea = i > 0 ? '<div class="ruta-linea ' + (hecho ? 'completada' : '') + '"></div>' : '';
+                return linea + '<div class="ruta-nodo ' + clase + '">' + (hecho ? '✓' : p.id) + '</div>';
+            }).join('');
+
+            // Qué toca ahora (incluye el guardado dentro del portal)
+            const paso = document.getElementById('siguientePaso');
+            const btnReanudar = document.getElementById('btnReanudar');
+            if (!siguiente) {
+                paso.textContent = '✓ Todos los portales sellados';
+            } else {
+                let quiz = null;
+                try { quiz = JSON.parse(localStorage.getItem('tragantia_' + siguiente.key + '_quiz') || 'null'); } catch (e) {}
+                const fase = localStorage.getItem('tragantia_' + siguiente.key + '_fase');
+                const totalPreguntas = Juego.PORTALES[siguiente.id - 1].preguntas;
+                if (quiz) {
+                    const n = Math.min((quiz.preguntaActual || 0) + 1, totalPreguntas);
+                    paso.textContent = '▶ Ritual a medias en ' + siguiente.nombre + ': pregunta ' + n + '/' + totalPreguntas;
+                    btnReanudar.textContent = 'Continuar el Ritual';
+                } else if (fase) {
+                    paso.textContent = '▶ Ya estás en ' + siguiente.nombre + ': entra sin volver a buscar';
+                    btnReanudar.textContent = 'Entrar al Portal ' + siguiente.id;
+                } else {
+                    paso.textContent = '▶ Siguiente destino: ' + siguiente.nombre;
                 }
             }
-            document.getElementById('resumenProgreso').textContent = 'PORTALES SELLADOS: ' + sellados + '/7 · ' + puntos + ' PTS';
-            document.getElementById('barraProgresoFill').style.width = Math.round(sellados / 7 * 100) + '%';
+
+            // Reliquias y logros
+            document.getElementById('reliquiasFila').innerHTML = Juego.PORTALES.map(p =>
+                '<span class="' + (completados.indexOf(p.num) !== -1 ? '' : 'bloqueada') + '" title="' + p.reliquia.nombre + '">' + p.reliquia.icono + '</span>'
+            ).join('');
+            const nLogros = Object.keys(Juego.logrosObtenidos()).length;
+            document.getElementById('btnZurron').textContent = '🎒 Reliquias y Logros (' + nLogros + '/' + Juego.LOGROS.length + ')';
         }
 
         function playIntro() {
@@ -1405,6 +1558,8 @@
             const input = document.getElementById('codigo-input').value.trim().toLowerCase();
             const codigosLower = CODIGOS_VALIDOS.map(c => c.toLowerCase());
             if (typeof CODIGOS_VALIDOS !== 'undefined' && codigosLower.includes(input)) {
+                // Partida nueva: limpia reliquias, logros y puntos de una partida anterior
+                Juego.nuevaPartida();
                 localStorage.setItem('tragantia_auth', 'true');
                 if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
                 abrirInstrucciones();
@@ -1434,7 +1589,10 @@
 
         function borrarProgreso() {
             if (confirm("Se borraran todos los datos. Deberas meter el codigo de nuevo.")) {
+                Juego.evento('borrado_progreso');
+                const pendientes = localStorage.getItem('tragantia_eventos_pendientes');
                 localStorage.clear();
+                if (pendientes) localStorage.setItem('tragantia_eventos_pendientes', pendientes);
                 window.location.reload();
             }
         }
@@ -1482,9 +1640,9 @@
                     <div class="portal-numero">${portal.id}</div>
                     <div class="portal-info">
                         <div class="portal-nombre">${portal.nombre}</div>
-                        <div class="portal-stats ${completado ? 'verde' : ''}">${completado ? puntos + ' pts · ' + tiempo : (esActivo ? 'Siguiente portal' : 'Bloqueado')}</div>
+                        <div class="portal-stats ${completado ? 'verde' : ''}">${completado ? puntos + ' pts · ' + tiempo + ' · ' + Juego.PORTALES[portal.id - 1].reliquia.nombre : (esActivo ? 'Siguiente portal' : 'Bloqueado')}</div>
                     </div>
-                    <div class="portal-icono">${completado ? '&#x2713;' : (esActivo ? '&#x25C9;' : '&#x25CB;')}</div>
+                    <div class="portal-icono">${completado ? Juego.PORTALES[portal.id - 1].reliquia.icono : (esActivo ? '&#x25C9;' : '&#x25CB;')}</div>
                 `;
 
                 if (completado || esActivo) {
