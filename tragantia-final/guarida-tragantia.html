@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Brecha #7 · Puerta Norte Castillo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
@@ -270,6 +270,23 @@
         .btn-cerrar-puntuacion { width: 100%; margin-top: 16px; padding: 12px; background: transparent; border: 1px solid var(--st-gray-dark); border-radius: 8px; color: var(--st-gray); font-family: 'Orbitron', sans-serif; font-size: 0.7em; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
         .btn-cerrar-puntuacion:hover { border-color: var(--accent); color: var(--accent); }
 
+        /* === MEJORAS UX: rumbo, tendencia, GPS, reanudar === */
+        .info-navegacion { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 4px; }
+        .rumbo-indicador { display: flex; align-items: center; gap: 6px; font-family: 'VT323', monospace; font-size: 0.95em; color: var(--st-amber); letter-spacing: 2px; }
+        .rumbo-flecha { display: inline-block; font-size: 1.25em; color: var(--accent); transition: transform 0.6s ease; text-shadow: 0 0 8px var(--accent-glow); }
+        .tendencia-distancia { font-family: 'VT323', monospace; font-size: 0.95em; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
+        .tendencia-distancia.acercando { color: var(--st-green); opacity: 1; }
+        .tendencia-distancia.alejando { color: #ff5252; opacity: 1; }
+        .precision-gps { font-family: 'VT323', monospace; font-size: 0.75em; color: var(--st-gray); letter-spacing: 2px; margin-top: 6px; }
+        .precision-gps.mala { color: #ff5252; }
+        .mensaje-gps { display: none; font-family: 'VT323', monospace; font-size: 0.85em; color: #ff5252; text-align: center; margin-top: 8px; padding: 8px 14px; border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; max-width: 320px; }
+        .aviso-reanudar { display: none; margin-top: 14px; padding: 14px 18px; background: rgba(57,255,20,0.05); border: 1px solid var(--st-green); border-radius: 8px; text-align: center; }
+        .aviso-reanudar p { font-family: 'VT323', monospace; color: var(--st-green); font-size: 0.9em; letter-spacing: 1px; margin-bottom: 10px; }
+        .btn-reanudar-quiz { padding: 12px 26px; background: var(--st-green); border: none; border-radius: 6px; color: var(--st-black); font-family: 'Orbitron', sans-serif; font-size: 0.7em; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
+        .delta-puntos { position: fixed; top: 54px; right: 24px; z-index: 181; font-family: 'VT323', monospace; font-size: 1.4em; pointer-events: none; opacity: 0; }
+        .delta-puntos.animar { animation: delta-sube 1.2s ease-out; }
+        @keyframes delta-sube { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-32px); } }
+
         /* Flicker animation */
         @keyframes st-flicker {
             0%, 100% { opacity: 1; } 41% { opacity: 1; } 42% { opacity: 0.4; } 43% { opacity: 1; }
@@ -329,6 +346,7 @@
 </head>
 <body>
     <button class="btn-puntuacion-flotante" onclick="abrirModalPuntuacion()">⭐ <span id="puntosFlotante">0</span> PTS</button>
+    <div class="delta-puntos" id="deltaPuntos"></div>
     <div class="modal-puntuacion" id="modalPuntuacion"><div class="modal-puntuacion-contenido"><h3>📊 Tu Puntuación</h3><div class="puntuacion-item"><span>Puntos actuales:</span><span id="puntosActualesModal">0</span></div><div class="puntuacion-item"><span>Respuestas correctas:</span><span id="correctasModal">0</span></div><div class="puntuacion-item"><span>Respuestas incorrectas:</span><span id="incorrectasModal">0</span></div><div class="puntuacion-item"><span>Bonus rapidez:</span><span id="bonusModal">0</span></div><div class="puntuacion-reglas" id="detallePortales"><h4>📍 Puntos por Portal:</h4><div id="listaPortalesPuntos"></div></div><div class="puntuacion-reglas"><h4>📋 Cómo se puntúa:</h4><p>✓ Correcta: +100 pts</p><p>✗ Incorrecta: -25 pts</p><p>⚡ Bonus: +5 a +20 pts</p></div><button class="btn-cerrar-puntuacion" onclick="cerrarModalPuntuacion()">Cerrar</button></div></div>
     <div class="pantalla-radar" id="pantallaRadar">
         <div class="header-mision">
@@ -342,19 +360,29 @@
             <div class="radar-overlay">
                 <div class="abismo-ring"></div><div class="abismo-ring"></div><div class="abismo-ring"></div><div class="abismo-ring"></div>
                 <div class="radar-sweep-final"></div>
-                <div class="punto-objetivo"></div>
+                <div class="punto-objetivo" id="puntoObjetivo"></div>
             </div>
         </div>
         <div class="display-distancia">
             <p style="font-size:0.75em;color:var(--dorado-antiguo);">DISTANCIA AL PORTAL</p>
             <p class="valor-distancia"><span id="valorMetros">---</span><span style="font-size:0.5em;"> m</span></p>
         </div>
+        <div class="info-navegacion">
+            <div class="rumbo-indicador"><span class="rumbo-flecha" id="rumboFlecha">➤</span><span id="rumboTexto">--</span></div>
+            <div class="tendencia-distancia" id="tendenciaDistancia"></div>
+        </div>
+        <p class="precision-gps" id="precisionGps">PRECISIÓN GPS: --</p>
+        <p class="mensaje-gps" id="mensajeGps"></p>
         <div class="instruccion-busqueda">
             <p class="buscar-texto">☠ Localizar Guarida</p>
             <p class="objetivo-texto">⚠ PUERTA NORTE del Castillo ⚠</p>
             <p class="objetivo-texto" style="font-size:0.75em; margin-top:8px; color:#ff6b6b;">No es la entrada principal. Busca el acceso a los jardines.</p>
         </div>
-        <button class="btn-iniciar" id="btnIniciar">☠ ACTIVAR BÚSQUEDA PORTAL FINAL</button>
+        <button class="btn-iniciar" id="btnIniciar">☠ INICIAR RASTREO DEL PORTAL FINAL</button>
+        <div class="aviso-reanudar" id="avisoReanudar">
+            <p>☠ RITUAL INTERRUMPIDO DETECTADO</p>
+            <button class="btn-reanudar-quiz" onclick="reanudarQuizGuardado()">Continuar donde lo dejaste</button>
+        </div>
     </div>
 
     <div class="visor-reves" id="visorReves">
@@ -440,13 +468,15 @@
                 <div class="stat-box"><div class="stat-valor" id="statBonus">+0</div><div class="stat-label">BONUS</div></div>
             </div>
             <div class="rango-titulo" id="rangoTitulo">Guardián de Cazorla</div>
-            <button class="btn-guardar" onclick="guardarImagen()">📸 GUARDAR IMAGEN</button>
+            <button class="jg-btn-compartir" onclick="compartirHazana()">📤 COMPARTIR MI HAZAÑA</button>
             <div class="compartir-redes">
                 <button class="btn-red" onclick="compartirWhatsApp()">💬</button>
-                <button class="btn-red" onclick="compartirTwitter()">🐦</button>
+                <button class="btn-red" onclick="compartirTwitter()">𝕏</button>
                 <button class="btn-red" onclick="compartirFacebook()">📘</button>
                 <button class="btn-red" onclick="copiarEnlace()">🔗</button>
             </div>
+            <button class="btn-guardar" onclick="guardarImagen()">📸 GUARDAR IMAGEN</button>
+            <div id="resumenLogros"></div>
             <button class="btn-finalizar" onclick="finalizarJuego()">Finalizar Aventura</button>
         </div>
     </div>
@@ -459,9 +489,12 @@
     <img id="portalRef1" src="imagenes/portal1.jpg" style="display:none;" crossorigin="anonymous">
     <img id="portalRef2" src="imagenes/portal2.jpg" style="display:none;" crossorigin="anonymous">
 
+    <script src="juego.js"></script>
     <script>
         if (localStorage.getItem('tragantia_auth') !== 'true') { window.location.href = 'index.html'; }
-        localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
+        var PORTAL_YA_SELLADO = localStorage.getItem('tragantia_portal7_completado') === 'true';
+        if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
+        Juego.iniciarPortal(7);
 
         var CONFIG = {
             destino: { lat: 37.90820017764403, lng: -3.0007798683021822, radio: 20 },
@@ -482,6 +515,12 @@
         var mobilenetModel = null, referenciaFeatures1 = null, referenciaFeatures2 = null;
         var intervaloTimer = null, segundosTranscurridos = 0;
         var mapa = null, marcadorUsuario = null, marcadorDestino = null;
+        var CLAVE_ESTADO_QUIZ = 'tragantia_portal7_quiz';
+        var rangoFinal = '';
+
+        // Funciones comunes a todos los portales (vibrar, wake lock, rumbo, pistas, saltar narración,
+        // guardado y reanudación del quiz): definidas en juego.js
+
 
         // === TODO DENTRO DE DOMContentLoaded ===
         document.addEventListener('DOMContentLoaded', function() {
@@ -528,18 +567,27 @@
                 elementos.audioPitido.play().then(function() { elementos.audioPitido.pause(); }).catch(function(){});
                 elementos.audioNarrativo.play().then(function() { elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; }).catch(function(){});
                 elementos.audioVerdad.play().then(function() { elementos.audioVerdad.pause(); elementos.audioVerdad.currentTime = 0; }).catch(function(){});
+                solicitarWakeLock();
+                Juego.brujula.activar();
+                Juego.iniciarBusqueda();
                 if (navigator.geolocation) {
                     elementos.btnIniciar.disabled = true;
                     elementos.btnIniciar.innerHTML = '☠ Entrando...';
-                    navigator.geolocation.watchPosition(actualizarPosicion, function() { elementos.btnIniciar.disabled = false; elementos.btnIniciar.innerHTML = '☠ Reintentar'; detenerPitidos(); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+                    estado.watchId = navigator.geolocation.watchPosition(actualizarPosicion, errorGPS, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
                 } else { alert('Tu dispositivo no soporta geolocalización'); }
             });
 
             // BOTÓN SELLAR PORTAL
-            elementos.btnResolver.addEventListener('click', function() { elementos.modalQuiz.style.display = 'block'; estado.tiempoInicioPregunta = Date.now(); iniciarTimerQuiz(); cargarPregunta(); });
+            elementos.btnResolver.addEventListener('click', function() { elementos.modalQuiz.style.display = 'block'; estado.tiempoInicioPregunta = Date.now(); iniciarTimerQuiz(); guardarEstadoQuiz(); cargarPregunta(); });
 
             actualizarPuntosFlotante();
             inicializarMapa();
+
+            // Ofrecer reanudación si el portal se interrumpió (quiz a medias o ya llegado)
+            Juego.prepararReanudacion(CONFIG.preguntas.length, reanudarQuizGuardado, reanudarEnPortal);
+
+            // Misión ya terminada: mostrar directamente el resultado guardado
+            if (PORTAL_YA_SELLADO) { elementos.pantallaRadar.style.display = 'none'; mostrarPuntuacionFinal(); }
         });
 
         function actualizarPuntosFlotante() { document.getElementById('puntosFlotante').textContent = puntosAnteriores + estado.puntuacionTotal; }
@@ -552,21 +600,22 @@
         function reproducirPitido() { if (estado.visorActivo) return; elementos.audioPitido.currentTime = 0; elementos.audioPitido.volume = 0.5; elementos.audioPitido.play().catch(function(){}); }
         function actualizarSistemaPitidos(d) { var n = calcularIntervalosPitido(d); if (estado.intervaloPitido) clearInterval(estado.intervaloPitido); estado.intervaloPitido = setInterval(reproducirPitido, n); if (Math.abs(estado.ultimaDistancia - d) > 20) reproducirPitido(); estado.ultimaDistancia = d; }
         function detenerPitidos() { if (estado.intervaloPitido) { clearInterval(estado.intervaloPitido); estado.intervaloPitido = null; } }
-        function actualizarPosicion(pos) { var d = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng); elementos.valorMetros.textContent = Math.round(d); actualizarMapa(pos.coords.latitude, pos.coords.longitude); actualizarSistemaPitidos(d); if (d <= CONFIG.destino.radio && !estado.visorActivo) { detenerPitidos(); activarVisor(); } }
-        function activarVisor() { estado.visorActivo = true; elementos.pantallaRadar.style.display = 'none'; elementos.visorReves.style.display = 'block'; elementos.btnResolver.style.display = 'none'; intentarCamara(); elementos.audioAmbiente.volume = 0.1; elementos.audioAmbiente.play().catch(function(){}); iniciarNarracion(); setTimeout(function() { programarSusto(); }, 15000); }
+        function actualizarPosicion(pos) { var d = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng); elementos.valorMetros.textContent = Math.round(d); actualizarMapa(pos.coords.latitude, pos.coords.longitude); actualizarSistemaPitidos(d); actualizarRumbo(pos.coords.latitude, pos.coords.longitude); actualizarTendencia(d); var ep = document.getElementById('precisionGps'); ep.textContent = 'PRECISIÓN GPS: ±' + Math.round(pos.coords.accuracy) + 'm'; ep.classList.toggle('mala', pos.coords.accuracy > 35); document.getElementById('mensajeGps').style.display = 'none'; if (d <= Juego.radioEfectivo(CONFIG.destino.radio, pos.coords.accuracy) && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); } else if (!estado.visorActivo) { Juego.vigilarLlegada(d, function() { detenerPitidos(); activarVisor(); }); } }
+        function errorGPS(error) { Juego.registrarErrorGps(error.code); var textos = { 1: '⚠ PERMISO DE UBICACIÓN DENEGADO. Actívalo en los ajustes del navegador y reintenta.', 2: '⚠ SEÑAL GPS NO DISPONIBLE. Muévete a cielo abierto.', 3: '⚠ EL GPS TARDA EN RESPONDER. Buscando señal...' }; var msg = document.getElementById('mensajeGps'); msg.textContent = textos[error.code] || '⚠ ERROR DE GPS. Reintenta.'; msg.style.display = 'block'; if (error.code !== 1 && !estado.visorActivo) Juego.vigilarLlegada(null, function() { detenerPitidos(); activarVisor(); }); if (error.code === 1) { elementos.btnIniciar.disabled = false; elementos.btnIniciar.innerHTML = '☠ Reintentar'; detenerPitidos(); } }
+        function activarVisor() { estado.visorActivo = true; Juego.marcarLlegada(); elementos.pantallaRadar.style.display = 'none'; elementos.visorReves.style.display = 'block'; elementos.btnResolver.style.display = 'none'; intentarCamara(); elementos.audioAmbiente.volume = 0.1; elementos.audioAmbiente.play().catch(function(){}); iniciarNarracion(); setTimeout(function() { programarSusto(); }, 15000); }
         function intentarCamara() { navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function(stream) { elementos.videoCamara.srcObject = stream; elementos.btnActivarCamara.style.display = 'none'; }).catch(function() { elementos.btnActivarCamara.style.display = 'block'; }); }
-        function iniciarNarracion() { if (estado.narrativoMostrado) { elementos.btnResolver.style.display = 'block'; return; } estado.narrativoMostrado = true; estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.volume = 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; elementos.narrativoTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
+        function iniciarNarracion() { if (estado.narrativoMostrado) { elementos.btnResolver.style.display = 'block'; return; } estado.narrativoMostrado = true; estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.volume = 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.innerHTML = ''; var tw = estado.intervaloTexto = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
         function verificarFinNarracion() { if (estado.textoTerminado && estado.audioTerminado) finalizarNarracion(); }
-        function finalizarNarracion() { if (!estado.narracionActiva) return; estado.narracionActiva = false; elementos.btnRepetir.classList.add('visible'); elementos.audioAmbiente.volume = 0.4; setTimeout(function() { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(function() { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500); }
-        function repetirNarracion() { estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.btnRepetir.classList.remove('visible'); elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; elementos.narrativoTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
+        function finalizarNarracion() { if (!estado.narracionActiva) return; estado.narracionActiva = false; Juego.guardarFase('narrativa'); elementos.btnRepetir.classList.add('visible'); elementos.audioAmbiente.volume = 0.4; setTimeout(function() { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(function() { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500); }
+        function repetirNarracion() { estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.btnRepetir.classList.remove('visible'); elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.innerHTML = ''; var tw = estado.intervaloTexto = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
         function toggleSilenciar() { estado.audioSilenciado = !estado.audioSilenciado; if (estado.audioSilenciado) { elementos.audioNarrativo.volume = 0; elementos.iconoAudio.style.opacity = '0.4'; elementos.btnSilenciar.textContent = 'Activar'; } else { elementos.audioNarrativo.volume = 0.9; elementos.iconoAudio.style.opacity = '1'; elementos.btnSilenciar.textContent = 'Silenciar'; } }
         function programarSusto() { if (!estado.visorActivo) return; setTimeout(function() { if (estado.visorActivo && elementos.modalQuiz.style.display !== 'block' && !estado.narracionActiva && elementos.pantallaVerdad.style.display !== 'block') ejecutarSusto(); programarSusto(); }, 5000 + Math.random() * 10000); }
-        function ejecutarSusto() { if (estado.narracionActiva || elementos.pantallaVerdad.style.display === 'block') return; elementos.efectoSusto.classList.add('activo'); elementos.audioSusto.currentTime = 0; elementos.audioSusto.volume = 0.9; elementos.audioSusto.play(); elementos.videoCamara.style.filter = 'contrast(5) brightness(5) hue-rotate(180deg) invert(1)'; setTimeout(function() { elementos.efectoSusto.classList.remove('activo'); elementos.videoCamara.style.filter = ''; }, 1500); }
+        function ejecutarSusto() { if (estado.narracionActiva || elementos.pantallaVerdad.style.display === 'block') return; if (!Juego.sinSustos()) vibrar([80, 40, 200]); elementos.efectoSusto.classList.add('activo'); elementos.audioSusto.currentTime = 0; elementos.audioSusto.volume = 0.9; elementos.audioSusto.play(); elementos.videoCamara.style.filter = 'contrast(5) brightness(5) hue-rotate(180deg) invert(1)'; setTimeout(function() { elementos.efectoSusto.classList.remove('activo'); elementos.videoCamara.style.filter = ''; }, 1500); }
         function crearIndicadoresProgreso() { elementos.quizProgreso.innerHTML = ''; CONFIG.preguntas.forEach(function(_, i) { var d = document.createElement('div'); d.className = 'progreso-dot' + (i === 0 ? ' activo' : ''); elementos.quizProgreso.appendChild(d); }); }
-        function iniciarTimerQuiz() { segundosTranscurridos = 0; actualizarDisplayTimer(); intervaloTimer = setInterval(function() { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000); }
+        function iniciarTimerQuiz() { segundosTranscurridos = 0; actualizarDisplayTimer(); intervaloTimer = setInterval(function() { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000); }
         function actualizarDisplayTimer() { var m = Math.floor(segundosTranscurridos/60).toString().padStart(2,'0'); var s = (segundosTranscurridos%60).toString().padStart(2,'0'); elementos.quizTimer.textContent = '⏱ '+m+':'+s; }
-        function cargarPregunta() { estado.tiempoInicioPregunta = Date.now(); var p = CONFIG.preguntas[estado.preguntaActual]; document.querySelectorAll('.progreso-dot').forEach(function(d,i) { d.classList.remove('activo'); if (i<estado.preguntaActual) d.classList.add('completado'); if (i===estado.preguntaActual) d.classList.add('activo'); }); elementos.quizContenido.innerHTML = '<p class="quiz-pregunta">'+p.texto+'</p><div class="quiz-opciones">'+p.opciones.map(function(o,i) { return '<button class="btn-opcion" data-index="'+i+'">'+o+'</button>'; }).join('')+'</div>'; document.querySelectorAll('.btn-opcion').forEach(function(b) { b.addEventListener('click', function(e) { verificarRespuesta(parseInt(e.target.dataset.index)); }); }); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal; }
-        function verificarRespuesta(idx) { if (estado.procesandoRespuesta) return; estado.procesandoRespuesta = true; var p = CONFIG.preguntas[estado.preguntaActual]; var btns = document.querySelectorAll('.btn-opcion'); btns.forEach(function(b) { b.style.pointerEvents = 'none'; }); var tr = (Date.now()-estado.tiempoInicioPregunta)/1000; if (idx===p.correcta) { btns[idx].classList.add('correcta'); var pts = 100, bon = 0; if (tr<15) bon=20; else if (tr<30) bon=15; else if (tr<60) bon=10; else if (tr<120) bon=5; estado.puntuacionTotal += pts+bon; estado.bonusTotal += bon; estado.respuestasCorrectas++; elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (+'+(pts+bon)+')'; actualizarPuntosFlotante(); setTimeout(function() { estado.preguntaActual++; estado.procesandoRespuesta = false; if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); estado.tiempoTotalJuego = segundosTranscurridos; mostrarBuscarPortal(); } else { cargarPregunta(); } }, 1000); } else { btns[idx].classList.add('incorrecta'); estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal-25); estado.respuestasIncorrectas++; elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (-25)'; actualizarPuntosFlotante(); setTimeout(function() { btns.forEach(function(b) { b.classList.remove('incorrecta'); b.style.pointerEvents = 'auto'; }); estado.procesandoRespuesta = false; }, 1000); } }
+        function cargarPregunta() { estado.tiempoInicioPregunta = Date.now(); var p = CONFIG.preguntas[estado.preguntaActual]; document.querySelectorAll('.progreso-dot').forEach(function(d,i) { d.classList.remove('activo'); if (i<estado.preguntaActual) d.classList.add('completado'); if (i===estado.preguntaActual) d.classList.add('activo'); }); elementos.quizContenido.innerHTML = '<p class="quiz-pregunta">'+p.texto+'</p><div class="quiz-opciones">'+p.opciones.map(function(o,i) { return '<button class="btn-opcion" data-index="'+i+'">'+o+'</button>'; }).join('')+'</div>'; document.querySelectorAll('.btn-opcion').forEach(function(b) { b.addEventListener('click', function(e) { verificarRespuesta(parseInt(e.target.dataset.index)); }); }); Juego.prepararPista(estado.preguntaActual, p, elementos.quizContenido, aplicarCostePista); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal; }
+        function verificarRespuesta(idx) { if (estado.procesandoRespuesta) return; estado.procesandoRespuesta = true; var p = CONFIG.preguntas[estado.preguntaActual]; var btns = document.querySelectorAll('.btn-opcion'); btns.forEach(function(b) { b.style.pointerEvents = 'none'; }); var tr = (Date.now()-estado.tiempoInicioPregunta)/1000; if (idx===p.correcta) { btns[idx].classList.add('correcta'); vibrar(60); var pts = 100, bon = 0; if (tr<15) bon=20; else if (tr<30) bon=15; else if (tr<60) bon=10; else if (tr<120) bon=5; estado.puntuacionTotal += pts+bon; estado.bonusTotal += bon; estado.respuestasCorrectas++; Juego.registrarRespuesta(estado.preguntaActual, true, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (+'+(pts+bon)+')'; actualizarPuntosFlotante(); mostrarDeltaPuntos('+'+(pts+bon), '#39ff14'); estado.preguntaActual++; guardarEstadoQuiz(); setTimeout(function() { estado.procesandoRespuesta = false; if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); estado.tiempoTotalJuego = segundosTranscurridos; mostrarBuscarPortal(); } else { cargarPregunta(); } }, 1000); } else { btns[idx].classList.add('incorrecta'); vibrar([250]); estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal-25); estado.respuestasIncorrectas++; Juego.registrarRespuesta(estado.preguntaActual, false, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (-25)'; actualizarPuntosFlotante(); mostrarDeltaPuntos('-25', '#ff5252'); guardarEstadoQuiz(); setTimeout(function() { btns.forEach(function(b) { b.classList.remove('incorrecta'); b.style.pointerEvents = 'auto'; }); estado.procesandoRespuesta = false; }, 1000); } }
 
         async function mostrarBuscarPortal() { elementos.modalQuiz.style.display = 'none'; elementos.visorReves.style.display = 'none'; elementos.pantallaBuscarPortal.style.display = 'block'; elementos.audioAmbiente.volume = 0.2; try { var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } }); elementos.buscarVideo.srcObject = stream; elementos.buscarCargando.textContent = 'Cargando detector de portal...'; await cargarModeloDeteccion(); elementos.buscarCargando.textContent = 'Buscando portal...'; estado.deteccionActiva = true; detectarPortal(); } catch (err) { elementos.buscarCargando.textContent = 'Toca para continuar'; document.getElementById('buscarOverlay').addEventListener('click', function() { portalEncontrado(); }, { once: true }); } }
         async function cargarModeloDeteccion() { try { mobilenetModel = await mobilenet.load({ version: 2, alpha: 1.0 }); referenciaFeatures1 = await extraerCaracteristicas(elementos.portalRef1); referenciaFeatures2 = await extraerCaracteristicas(elementos.portalRef2); estado.modeloCargado = true; } catch (err) { estado.modeloCargado = false; } }
@@ -574,46 +623,64 @@
         async function detectarPortal() { if (!estado.deteccionActiva || estado.portalDetectado) return; var canvas = elementos.canvasDeteccion; var ctx = canvas.getContext('2d'); canvas.width = 224; canvas.height = 224; ctx.drawImage(elementos.buscarVideo, 0, 0, 224, 224); if (estado.modeloCargado && mobilenetModel) { try { var ff = await extraerCaracteristicas(canvas); var s1 = calcularSimilitudCoseno(ff, referenciaFeatures1); var s2 = calcularSimilitudCoseno(ff, referenciaFeatures2); if (Math.max(s1, s2) > 0.60) { portalEncontrado(); return; } } catch (err) {} } else { var id = ctx.getImageData(0, 0, 224, 224).data; var po = 0; for (var y = 70; y < 154; y++) { for (var x = 70; x < 154; x++) { var ix = (y*224+x)*4; if ((id[ix]+id[ix+1]+id[ix+2])/3 < 40) po++; } } if (po/(84*84) > 0.4) { portalEncontrado(); return; } } requestAnimationFrame(detectarPortal); }
         function calcularSimilitudCoseno(a, b) { var dot=0, nA=0, nB=0; for (var i=0; i<a.length; i++) { dot+=a[i]*b[i]; nA+=a[i]*a[i]; nB+=b[i]*b[i]; } return dot/(Math.sqrt(nA)*Math.sqrt(nB)); }
         function portalEncontrado() { if (estado.portalDetectado) return; estado.portalDetectado = true; estado.deteccionActiva = false; elementos.portalDetectado.classList.add('activo'); elementos.buscarCargando.style.display = 'none'; if (navigator.vibrate) navigator.vibrate([200,100,200]); setTimeout(function() { mostrarVerdad(); }, 2000); }
-        function mostrarVerdad() { elementos.pantallaBuscarPortal.style.display = 'none'; elementos.pantallaVerdad.style.display = 'block'; elementos.audioAmbiente.pause(); elementos.audioAmbiente.currentTime = 0; elementos.audioSusto.pause(); elementos.audioSusto.currentTime = 0; elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; elementos.audioPitido.pause(); estado.audioSilenciado = true; elementos.audioVerdad.volume = 0.9; elementos.audioVerdad.play().catch(function(){}); var texto = CONFIG.textoVerdad; var i = 0; elementos.verdadTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { if (texto.charAt(i) === '\n') { elementos.verdadTexto.innerHTML += '<br><br>'; } else { elementos.verdadTexto.innerHTML += texto.charAt(i); } i++; elementos.pantallaVerdad.scrollTop = elementos.pantallaVerdad.scrollHeight; } else { clearInterval(tw); } }, 40); elementos.audioVerdad.addEventListener('ended', function() { setTimeout(mostrarPuntuacionFinal, 2000); }, { once: true }); }
+        function mostrarVerdad() { elementos.pantallaBuscarPortal.style.display = 'none'; elementos.pantallaVerdad.style.display = 'block'; elementos.audioAmbiente.pause(); elementos.audioAmbiente.currentTime = 0; elementos.audioSusto.pause(); elementos.audioSusto.currentTime = 0; elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; elementos.audioPitido.pause(); estado.audioSilenciado = true; elementos.audioVerdad.volume = 0.9; elementos.audioVerdad.addEventListener('error', mostrarBotonVerdad, { once: true }); elementos.audioVerdad.play().catch(mostrarBotonVerdad); var texto = CONFIG.textoVerdad; var i = 0; elementos.verdadTexto.innerHTML = ''; var tw = setInterval(function() { if (i < texto.length) { if (texto.charAt(i) === '\n') { elementos.verdadTexto.innerHTML += '<br><br>'; } else { elementos.verdadTexto.innerHTML += texto.charAt(i); } i++; elementos.pantallaVerdad.scrollTop = elementos.pantallaVerdad.scrollHeight; } else { clearInterval(tw); mostrarBotonVerdad(); } }, 40); elementos.audioVerdad.addEventListener('ended', function() { setTimeout(mostrarPuntuacionFinal, 2000); }, { once: true }); }
+
+        function mostrarBotonVerdad() { if (document.getElementById('btnVerdadContinuar')) return; var b = document.createElement('button'); b.id = 'btnVerdadContinuar'; b.className = 'btn-finalizar'; b.textContent = 'Ver mi resultado ▸'; b.onclick = mostrarPuntuacionFinal; document.querySelector('.verdad-contenido').appendChild(b); }
 
         function mostrarPuntuacionFinal() {
+            if (estado.finalMostrado) return;
+            estado.finalMostrado = true;
+            elementos.audioVerdad.pause();
             elementos.pantallaVerdad.style.display = 'none';
             elementos.pantallaPuntuacion.style.display = 'block';
-            estado.puntuacionTotal += 50;
+            if (!PORTAL_YA_SELLADO) estado.puntuacionTotal += 50;
             var totalPuntos = puntosAnteriores + estado.puntuacionTotal;
             var totalCorrectas = correctasAnteriores + estado.respuestasCorrectas;
             var totalIncorrectas = incorrectasAnteriores + estado.respuestasIncorrectas;
             var totalBonus = bonusAnteriores + estado.bonusTotal;
             var mT = Math.floor(estado.tiempoTotalJuego/60).toString().padStart(2,'0');
             var sT = (estado.tiempoTotalJuego%60).toString().padStart(2,'0');
-            localStorage.setItem('tragantia_puntos', totalPuntos);
-            localStorage.setItem('tragantia_correctas_total', totalCorrectas);
-            localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
-            localStorage.setItem('tragantia_bonus_total', totalBonus);
-            localStorage.setItem('tragantia_portal7_completado', 'true');
-            localStorage.setItem('tragantia_portal7_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_portal7_tiempo', mT+':'+sT);
-            localStorage.setItem('tragantia_completado', 'true');
+            var rango;
+            if (PORTAL_YA_SELLADO) {
+                // Volver a abrir la pantalla final no cambia nada: solo se muestra lo guardado
+                rango = Juego.calcularRango(totalPuntos);
+            } else {
+                localStorage.setItem('tragantia_puntos', totalPuntos);
+                localStorage.setItem('tragantia_correctas_total', totalCorrectas);
+                localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
+                localStorage.setItem('tragantia_bonus_total', totalBonus);
+                localStorage.setItem('tragantia_portal7_completado', 'true');
+                localStorage.setItem('tragantia_portal7_puntos', estado.puntuacionTotal);
+                localStorage.setItem('tragantia_portal7_tiempo', mT+':'+sT);
+                localStorage.setItem('tragantia_completado', 'true');
+                localStorage.removeItem(CLAVE_ESTADO_QUIZ);
+                Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: estado.tiempoTotalJuego });
+                rango = Juego.finalizarMision({ puntos: totalPuntos, correctas: totalCorrectas, incorrectas: totalIncorrectas });
+                vibrar([80, 50, 80, 50, 200]);
+            }
+            rangoFinal = rango.titulo;
             var totalP = totalCorrectas + totalIncorrectas;
             var prec = totalP > 0 ? Math.round((totalCorrectas/totalP)*100) : 100;
             elementos.puntuacionFinal.textContent = totalPuntos;
             document.getElementById('statPrecision').textContent = prec+'%';
             document.getElementById('statBonus').textContent = '+'+totalBonus;
-            document.getElementById('statTiempo').textContent = mT+':'+sT;
-            var est = 1; if (totalPuntos>=2500) est=5; else if (totalPuntos>=2000) est=4; else if (totalPuntos>=1500) est=3; else if (totalPuntos>=1000) est=2;
-            document.querySelectorAll('.estrella').forEach(function(e,i) { if (i<est) e.classList.add('activa'); });
-            var rango = 'Aprendiz de Guardián'; if (totalPuntos>=3000) rango='Guardián Legendario de Cazorla'; else if (totalPuntos>=2500) rango='Guardián Maestro de Cazorla'; else if (totalPuntos>=2000) rango='Guardián de Cazorla'; else if (totalPuntos>=1500) rango='Protector de Cazorla';
-            document.getElementById('rangoTitulo').textContent = rango;
+            document.getElementById('statTiempo').textContent = Juego.formatearTiempo(Juego.tiempoMisionSegundos());
+            document.querySelectorAll('.estrella').forEach(function(e,i) { if (i<rango.estrellas) e.classList.add('activa'); });
+            document.getElementById('rangoTitulo').textContent = rango.titulo;
+            setTimeout(function() { Juego.pintarResumenFinal(document.getElementById('resumenLogros')); }, 1200);
             actualizarPuntosFlotante();
         }
 
         async function guardarImagen() { try { var c = document.getElementById('puntuacionContenido'); var canvas = await html2canvas(c, { backgroundColor: '#030303', scale: 2 }); var link = document.createElement('a'); link.download = 'tragantia-puntuacion.png'; link.href = canvas.toDataURL('image/png'); link.click(); } catch (err) { alert('Haz una captura de pantalla manualmente.'); } }
-        function compartirWhatsApp() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos! ¿Te atreves? 👻 #LaTragantia #Cazorla'; window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank'); }
-        function compartirTwitter() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos! 👻 #LaTragantia #Cazorla'; window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(t),'_blank'); }
-        function compartirFacebook() { window.open('https://www.facebook.com/sharer/sharer.php?quote='+encodeURIComponent('¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos!'),'_blank'); }
-        function copiarEnlace() { var t='🏆 ¡He completado La Tragantía con '+(puntosAnteriores+estado.puntuacionTotal)+' puntos! 👻'; navigator.clipboard.writeText(t).then(function(){alert('¡Copiado!');}).catch(function(){alert('Tu puntuación: '+(puntosAnteriores+estado.puntuacionTotal));}); }
+        var URL_JUEGO = 'https://leyendatragantia.com/';
+        function textoHazana() { return '🏆 ¡He completado La Tragantía con ' + (puntosAnteriores + estado.puntuacionTotal) + ' puntos y el rango «' + rangoFinal + '»! ¿Te atreves? 👻 #LaTragantia #Cazorla'; }
+        function compartirHazana() { if (navigator.share) { navigator.share({ title: 'La Tragantía', text: textoHazana(), url: URL_JUEGO }).catch(function(){}); } else { compartirWhatsApp(); } }
+        function compartirWhatsApp() { window.open('https://wa.me/?text=' + encodeURIComponent(textoHazana() + ' ' + URL_JUEGO), '_blank'); }
+        function compartirTwitter() { window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(textoHazana()) + '&url=' + encodeURIComponent(URL_JUEGO), '_blank'); }
+        function compartirFacebook() { window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(URL_JUEGO), '_blank'); }
+        function copiarEnlace() { navigator.clipboard.writeText(textoHazana() + ' ' + URL_JUEGO).then(function(){ alert('¡Copiado!'); }).catch(function(){ alert('Tu puntuación: ' + (puntosAnteriores + estado.puntuacionTotal)); }); }
         function finalizarJuego() { localStorage.removeItem('tragantia_progreso'); window.location.href = 'index.html'; }
-        function salirMision() { if (confirm('¿Abandonar la misión final?')) { elementos.audioAmbiente.pause(); if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(function(t){t.stop();}); if (elementos.buscarVideo.srcObject) elementos.buscarVideo.srcObject.getTracks().forEach(function(t){t.stop();}); window.location.href = 'index.html'; } }
+        function salirMision() { if (confirm('¿Abandonar la misión final?')) { Juego.evento('salida'); elementos.audioAmbiente.pause(); if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(function(t){t.stop();}); if (elementos.buscarVideo.srcObject) elementos.buscarVideo.srcObject.getTracks().forEach(function(t){t.stop();}); window.location.href = 'index.html'; } }
     </script>
 </body>
 </html>

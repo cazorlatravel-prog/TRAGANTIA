@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Brecha #6 · Molino Harinero</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700&family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
@@ -224,7 +224,7 @@
         .btn-opcion.incorrecta { background: rgba(228, 9, 20, 0.1); border-color: var(--st-red); color: var(--st-red); }
 
         /* Success screen */
-        .pantalla-exito { display: none; text-align: center; padding: 40px 0; }
+        .pantalla-exito { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px 0; }
         .pantalla-exito.activo { display: block; }
         .exito-icono { font-size: 3em; color: var(--st-green); margin-bottom: 16px; }
         .exito-titulo { font-family: 'Creepster', cursive; font-size: 1.6em; color: var(--st-green); margin-bottom: 12px; text-shadow: 0 0 15px rgba(57, 255, 20, 0.4); }
@@ -267,6 +267,23 @@
         .puntuacion-reglas p { font-family: 'VT323', monospace; color: var(--st-gray); font-size: 0.9em; margin-bottom: 4px; }
         .btn-cerrar-puntuacion { width: 100%; margin-top: 16px; padding: 12px; background: transparent; border: 1px solid var(--st-gray-dark); border-radius: 8px; color: var(--st-gray); font-family: 'Orbitron', sans-serif; font-size: 0.7em; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; }
         .btn-cerrar-puntuacion:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* === MEJORAS UX: rumbo, tendencia, GPS, reanudar === */
+        .info-navegacion { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 4px; }
+        .rumbo-indicador { display: flex; align-items: center; gap: 6px; font-family: 'VT323', monospace; font-size: 0.95em; color: var(--st-amber); letter-spacing: 2px; }
+        .rumbo-flecha { display: inline-block; font-size: 1.25em; color: var(--accent); transition: transform 0.6s ease; text-shadow: 0 0 8px var(--accent-glow); }
+        .tendencia-distancia { font-family: 'VT323', monospace; font-size: 0.95em; letter-spacing: 2px; opacity: 0; transition: opacity 0.3s; }
+        .tendencia-distancia.acercando { color: var(--st-green); opacity: 1; }
+        .tendencia-distancia.alejando { color: #ff5252; opacity: 1; }
+        .precision-gps { font-family: 'VT323', monospace; font-size: 0.75em; color: var(--st-gray); letter-spacing: 2px; margin-top: 6px; }
+        .precision-gps.mala { color: #ff5252; }
+        .mensaje-gps { display: none; font-family: 'VT323', monospace; font-size: 0.85em; color: #ff5252; text-align: center; margin-top: 8px; padding: 8px 14px; border: 1px solid rgba(255,82,82,0.4); border-radius: 6px; max-width: 320px; }
+        .aviso-reanudar { display: none; margin-top: 14px; padding: 14px 18px; background: rgba(57,255,20,0.05); border: 1px solid var(--st-green); border-radius: 8px; text-align: center; }
+        .aviso-reanudar p { font-family: 'VT323', monospace; color: var(--st-green); font-size: 0.9em; letter-spacing: 1px; margin-bottom: 10px; }
+        .btn-reanudar-quiz { padding: 12px 26px; background: var(--st-green); border: none; border-radius: 6px; color: var(--st-black); font-family: 'Orbitron', sans-serif; font-size: 0.7em; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
+        .delta-puntos { position: fixed; top: 54px; right: 24px; z-index: 181; font-family: 'VT323', monospace; font-size: 1.4em; pointer-events: none; opacity: 0; }
+        .delta-puntos.animar { animation: delta-sube 1.2s ease-out; }
+        @keyframes delta-sube { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-32px); } }
 
         /* Flicker animation */
         @keyframes st-flicker {
@@ -326,6 +343,7 @@
 </head>
 <body>
     <button class="btn-puntuacion-flotante" onclick="abrirModalPuntuacion()">⭐ <span id="puntosFlotante">0</span> PTS</button>
+    <div class="delta-puntos" id="deltaPuntos"></div>
     <div class="modal-puntuacion" id="modalPuntuacion"><div class="modal-puntuacion-contenido"><h3>📊 Tu Puntuación</h3><div class="puntuacion-item"><span>Puntos actuales:</span><span id="puntosActualesModal">0</span></div><div class="puntuacion-item"><span>Respuestas correctas:</span><span id="correctasModal">0</span></div><div class="puntuacion-item"><span>Respuestas incorrectas:</span><span id="incorrectasModal">0</span></div><div class="puntuacion-item"><span>Bonus rapidez:</span><span id="bonusModal">0</span></div><div class="puntuacion-reglas" id="detallePortales"><h4>📍 Puntos por Portal:</h4><div id="listaPortalesPuntos"></div></div><div class="puntuacion-reglas"><h4>📋 Cómo se puntúa:</h4><p>✓ Correcta: +100 pts</p><p>✗ Incorrecta: -25 pts</p><p>⚡ Bonus: +5 a +20 pts</p></div><button class="btn-cerrar-puntuacion" onclick="cerrarModalPuntuacion()">Cerrar</button></div></div>
     <div class="pantalla-radar" id="pantallaRadar">
         <div class="header-mision">
@@ -343,7 +361,7 @@
                 <div class="wave-ring"></div>
                 <div class="wave-ring"></div>
                 <div class="radar-sweep-wave"></div>
-                <div class="punto-objetivo"></div>
+                <div class="punto-objetivo" id="puntoObjetivo"></div>
                 <div class="punto-centro"></div>
             </div>
         </div>
@@ -353,12 +371,24 @@
             <p class="valor-distancia"><span id="valorMetros">---</span><span> m</span></p>
         </div>
 
+        <div class="info-navegacion">
+            <div class="rumbo-indicador"><span class="rumbo-flecha" id="rumboFlecha">➤</span><span id="rumboTexto">--</span></div>
+            <div class="tendencia-distancia" id="tendenciaDistancia"></div>
+        </div>
+        <p class="precision-gps" id="precisionGps">PRECISIÓN GPS: --</p>
+        <p class="mensaje-gps" id="mensajeGps"></p>
+
         <div class="instruccion-busqueda">
             <p class="buscar-texto">〰 Buscar Objetivo</p>
             <p class="objetivo-texto">Junto al Museo Frondosa Naturaleza</p>
         </div>
 
-        <button class="btn-iniciar" id="btnIniciar"> ACTIVAR BÚSQUEDA SIGUIENTE PORTAL</button>
+        <button class="btn-iniciar" id="btnIniciar">📡 INICIAR RASTREO DEL PORTAL</button>
+
+        <div class="aviso-reanudar" id="avisoReanudar">
+            <p>〰 RITUAL INTERRUMPIDO DETECTADO</p>
+            <button class="btn-reanudar-quiz" onclick="reanudarQuizGuardado()">Continuar donde lo dejaste</button>
+        </div>
     </div>
 
     <div class="visor-reves" id="visorReves">
@@ -436,9 +466,12 @@
     <audio id="audioPitido" src="imagenes/beep.mp3" preload="auto"></audio>
     <audio id="audioNarrativo" src="imagenes/rio.mp3" preload="auto"></audio>
 
+    <script src="juego.js"></script>
     <script>
         if (localStorage.getItem('tragantia_auth') !== 'true') window.location.href = 'index.html';
-        localStorage.setItem('tragantia_progreso', 'rio-tragantia.html');
+        const PORTAL_YA_SELLADO = localStorage.getItem('tragantia_portal6_completado') === 'true';
+        if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'rio-tragantia.html');
+        Juego.iniciarPortal(6);
 
         const CONFIG = {
             destino: { lat: 37.90791538169969, lng: -2.9998242684716416, radio: 10 },
@@ -451,10 +484,15 @@
             ]
         };
 
-        let estado = { visorActivo: false, preguntaActual: 0, intervaloPitido: null, ultimaDistancia: Infinity, narrativoMostrado: false, audioSilenciado: false, narracionActiva: false, textoTerminado: false, audioTerminado: false, puntuacionTotal: 0, tiempoInicioPregunta: 0, respuestasCorrectas: 0, respuestasIncorrectas: 0, bonusTotal: 0, procesandoRespuesta: false };
+        let estado = { visorActivo: false, preguntaActual: 0, watchId: null, intervaloPitido: null, ultimaDistancia: Infinity, narrativoMostrado: false, audioSilenciado: false, narracionActiva: false, textoTerminado: false, audioTerminado: false, puntuacionTotal: 0, tiempoInicioPregunta: 0, respuestasCorrectas: 0, respuestasIncorrectas: 0, bonusTotal: 0, procesandoRespuesta: false };
         let intervaloTimer = null, segundosTranscurridos = 0;
         let mapa = null, marcadorUsuario = null, marcadorDestino = null;
-        
+        const CLAVE_ESTADO_QUIZ = 'tragantia_portal6_quiz';
+
+        // Funciones comunes a todos los portales (vibrar, wake lock, rumbo, pistas, saltar narración,
+        // guardado y reanudación del quiz): definidas en juego.js
+
+
         // Cargar puntos de portales anteriores
         const puntosAnteriores = parseInt(localStorage.getItem('tragantia_puntos') || '0');
         const correctasAnteriores = parseInt(localStorage.getItem('tragantia_correctas_total') || '0');
@@ -504,6 +542,9 @@
             history.pushState(null, null, location.href);
             window.addEventListener('popstate', function() { history.pushState(null, null, location.href); });
             inicializarMapa();
+
+            // Ofrecer reanudación si el portal se interrumpió (quiz a medias o ya llegado)
+            Juego.prepararReanudacion(CONFIG.preguntas.length, reanudarQuizGuardado, reanudarEnPortal);
         });
 
         function inicializarMapa() {
@@ -594,27 +635,53 @@
             elementos.audioSusto.play().then(() => elementos.audioSusto.pause()).catch(() => {});
             elementos.audioPitido.play().then(() => elementos.audioPitido.pause()).catch(() => {});
             elementos.audioNarrativo.play().then(() => { elementos.audioNarrativo.pause(); elementos.audioNarrativo.currentTime = 0; }).catch(() => {});
+            solicitarWakeLock();
+            Juego.brujula.activar();
+            Juego.iniciarBusqueda();
             if (navigator.geolocation) {
                 elementos.btnIniciar.disabled = true;
                 elementos.btnIniciar.innerHTML = '〰 Rastreando...';
-                navigator.geolocation.watchPosition(actualizarPosicion, () => {
-                    elementos.btnIniciar.disabled = false;
-                    elementos.btnIniciar.innerHTML = '〰 Reintentar';
-                    detenerPitidos();
-                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+                estado.watchId = navigator.geolocation.watchPosition(actualizarPosicion, errorGPS, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
             }
         });
 
         function actualizarPosicion(pos) {
-            const dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, CONFIG.destino.lat, CONFIG.destino.lng);
+            const { latitude, longitude, accuracy } = pos.coords;
+            const dist = calcularDistancia(latitude, longitude, CONFIG.destino.lat, CONFIG.destino.lng);
             elementos.valorMetros.textContent = Math.round(dist);
-            actualizarMapa(pos.coords.latitude, pos.coords.longitude);
+            actualizarMapa(latitude, longitude);
             actualizarSistemaPitidos(dist);
-            if (dist <= CONFIG.destino.radio && !estado.visorActivo) { detenerPitidos(); activarVisor(); }
+            actualizarRumbo(latitude, longitude);
+            actualizarTendencia(dist);
+            const elPrecision = document.getElementById('precisionGps');
+            elPrecision.textContent = 'PRECISIÓN GPS: ±' + Math.round(accuracy) + 'm';
+            elPrecision.classList.toggle('mala', accuracy > 35);
+            document.getElementById('mensajeGps').style.display = 'none';
+            if (dist <= Juego.radioEfectivo(CONFIG.destino.radio, accuracy) && !estado.visorActivo) { detenerPitidos(); vibrar([100, 60, 100, 60, 300]); activarVisor(); }
+            else if (!estado.visorActivo) Juego.vigilarLlegada(dist, () => { detenerPitidos(); activarVisor(); });
+        }
+
+        function errorGPS(error) {
+            Juego.registrarErrorGps(error.code);
+            const textos = {
+                1: '⚠ PERMISO DE UBICACIÓN DENEGADO. Actívalo en los ajustes del navegador y reintenta.',
+                2: '⚠ SEÑAL GPS NO DISPONIBLE. Muévete a cielo abierto.',
+                3: '⚠ EL GPS TARDA EN RESPONDER. Buscando señal...'
+            };
+            const msg = document.getElementById('mensajeGps');
+            msg.textContent = textos[error.code] || '⚠ ERROR DE GPS. Reintenta.';
+            msg.style.display = 'block';
+            if (error.code !== 1 && !estado.visorActivo) Juego.vigilarLlegada(null, () => { detenerPitidos(); activarVisor(); });
+            if (error.code === 1) {
+                elementos.btnIniciar.disabled = false;
+                elementos.btnIniciar.innerHTML = '〰 Reintentar';
+                detenerPitidos();
+            }
         }
 
         function activarVisor() {
             estado.visorActivo = true;
+            Juego.marcarLlegada();
             elementos.pantallaRadar.style.display = 'none';
             elementos.visorReves.style.display = 'block';
             elementos.btnResolver.style.display = 'none';
@@ -648,7 +715,7 @@
             const texto = CONFIG.textoNarrativo;
             let index = 0;
             elementos.narrativoTexto.innerHTML = '';
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
                 else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
             }, 50);
@@ -662,6 +729,7 @@
         function finalizarNarracion() {
             if (!estado.narracionActiva) return;
             estado.narracionActiva = false;
+            Juego.guardarFase('narrativa');
             elementos.btnRepetir.classList.add('visible');
             elementos.audioAmbiente.volume = 0.4;
             setTimeout(() => { elementos.panelNarrativo.classList.add('fadeOut'); setTimeout(() => { elementos.panelNarrativo.classList.remove('activo', 'fadeOut'); elementos.btnResolver.style.display = 'block'; }, 500); }, 1500);
@@ -675,7 +743,7 @@
             elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9;
             elementos.audioNarrativo.play().catch(() => { estado.audioTerminado = true; verificarFinNarracion(); });
             const texto = CONFIG.textoNarrativo; let index = 0; elementos.narrativoTexto.innerHTML = '';
-            const typewriter = setInterval(() => {
+            clearInterval(estado.intervaloTexto); const typewriter = estado.intervaloTexto = setInterval(() => {
                 if (index < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(index); index++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; }
                 else { clearInterval(typewriter); estado.textoTerminado = true; verificarFinNarracion(); }
             }, 50);
@@ -698,6 +766,7 @@
 
         function ejecutarSusto() {
             if (estado.narracionActiva) return;
+            if (!Juego.sinSustos()) vibrar([80, 40, 200]);
             elementos.efectoSusto.classList.add('activo');
             elementos.audioSusto.currentTime = 0;
             elementos.audioSusto.volume = 0.7;
@@ -713,12 +782,13 @@
             elementos.modalQuiz.style.display = 'block';
             estado.tiempoInicioPregunta = Date.now();
             iniciarTimerQuiz();
+            guardarEstadoQuiz();
             cargarPregunta();
         });
 
         function iniciarTimerQuiz() {
             segundosTranscurridos = 0; actualizarDisplayTimer();
-            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); }, 1000);
+            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
         }
         function actualizarDisplayTimer() {
             const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
@@ -746,6 +816,7 @@
             elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal; actualizarPuntosFlotante();
             elementos.quizContenido.innerHTML = `<p class="quiz-pregunta">${p.texto}</p><div class="quiz-opciones">${p.opciones.map((opt, i) => `<button class="btn-opcion" data-index="${i}">${opt}</button>`).join('')}</div>`;
             document.querySelectorAll('.btn-opcion').forEach(btn => btn.addEventListener('click', (e) => verificarRespuesta(parseInt(e.target.dataset.index))));
+            Juego.prepararPista(estado.preguntaActual, p, elementos.quizContenido, aplicarCostePista);
         }
 
         function verificarRespuesta(index) {
@@ -757,6 +828,7 @@
             botones.forEach(btn => btn.style.pointerEvents = 'none');
             if (index === p.correcta) {
                 botones[index].classList.add('correcta');
+                vibrar(60);
                 let puntos = 100, bonus = 0;
                 if (tiempoRespuesta < 15) bonus = 20;
                 else if (tiempoRespuesta < 30) bonus = 15;
@@ -764,18 +836,25 @@
                 estado.puntuacionTotal += puntos + bonus;
                 estado.bonusTotal += bonus;
                 estado.respuestasCorrectas++;
+                Juego.registrarRespuesta(estado.preguntaActual, true, tiempoRespuesta);
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (+' + (puntos + bonus) + ')'; actualizarPuntosFlotante();
+                mostrarDeltaPuntos('+' + (puntos + bonus), '#39ff14');
+                estado.preguntaActual++;
+                guardarEstadoQuiz();
                 setTimeout(() => {
-                    estado.preguntaActual++;
                     estado.procesandoRespuesta = false;
                     if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); }
                     else cargarPregunta();
                 }, 1000);
             } else {
                 botones[index].classList.add('incorrecta');
+                vibrar([250]);
                 estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - 25);
                 estado.respuestasIncorrectas++;
+                Juego.registrarRespuesta(estado.preguntaActual, false, tiempoRespuesta);
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-25)'; actualizarPuntosFlotante();
+                mostrarDeltaPuntos('-25', '#ff5252');
+                guardarEstadoQuiz();
                 setTimeout(() => {
                     botones.forEach(btn => { btn.classList.remove('incorrecta'); btn.style.pointerEvents = 'auto'; });
                     estado.procesandoRespuesta = false;
@@ -797,19 +876,22 @@
             const totalBonus = bonusAnteriores + estado.bonusTotal;
             
             // Guardar totales acumulados
-            localStorage.setItem('tragantia_puntos', totalPuntos);
-            localStorage.setItem('tragantia_correctas_total', totalCorrectas);
-            localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
-            localStorage.setItem('tragantia_bonus_total', totalBonus);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_puntos', totalPuntos);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_correctas_total', totalCorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_bonus_total', totalBonus);
             
             const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
             const secs = (segundosTranscurridos % 60).toString().padStart(2, '0');
-            localStorage.setItem('tragantia_portal6_completado', 'true');
-            localStorage.setItem('tragantia_portal6_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_portal6_tiempo', mins + ':' + secs);
-            localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
-            
-            elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal6_completado', 'true');
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal6_puntos', estado.puntuacionTotal);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal6_tiempo', mins + ':' + secs);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
+            localStorage.removeItem(CLAVE_ESTADO_QUIZ);
+            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos, repetido: PORTAL_YA_SELLADO });
+            if (!PORTAL_YA_SELLADO) vibrar([80, 50, 80, 50, 200]);
+
+            elementos.exitoPuntos.textContent = PORTAL_YA_SELLADO ? 'Portal ya sellado: tus puntos no cambian' : 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
             actualizarPuntosFlotante();
             elementos.audioAmbiente.pause();
         }
@@ -820,6 +902,7 @@
 
         function salirMision() {
             if (confirm('¿Seguro que quieres abandonar la misión?')) {
+                Juego.evento('salida');
                 elementos.audioAmbiente.pause();
                 if (elementos.videoCamara.srcObject) {
                     elementos.videoCamara.srcObject.getTracks().forEach(track => track.stop());

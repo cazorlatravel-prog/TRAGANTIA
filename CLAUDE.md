@@ -11,7 +11,7 @@ GPS-based urban escape room PWA set in Cazorla (Jaén, Spain). Players visit 7 p
 ## Tech Stack
 
 - **Frontend only:** HTML + CSS + JavaScript vanilla (no frameworks, no bundler, no npm)
-- **Each portal is a self-contained HTML file** with all CSS and JS inline (no shared stylesheets or JS modules except `codigos.js`)
+- **Each portal is a self-contained HTML file** with its core CSS and JS inline. Shared scripts: `codigos.js` (activation codes) and `juego.js` (relics, achievements, ranks, hints, compass, in-portal save phases, usage stats)
 - **PWA:** Service Worker (`sw.js`) + `manifest.json` for offline support
 - **GPS:** `navigator.geolocation.watchPosition()` for real-time tracking
 - **Camera:** `navigator.mediaDevices.getUserMedia()` for AR-style visor
@@ -36,8 +36,10 @@ GPS-based urban escape room PWA set in Cazorla (Jaén, Spain). Players visit 7 p
 │       ├── rio-tragantia.html      # Portal 6 (~675 lines, 4 questions instead of 5)
 │       ├── guarida-tragantia.html  # Portal 7 (~432 lines, final: results + TensorFlow portal detection)
 │       ├── codigos.js              # Activation codes array (plaintext, case-insensitive)
+│       ├── juego.js                # Shared game module (window.Juego): relics, achievements, ranks, hints, compass, stats
 │       ├── sw.js                   # Service Worker (cache-first + stale-while-revalidate)
 │       └── manifest.json           # PWA manifest
+├── estadisticas/               # NOT deployed: Google Apps Script receiver for usage stats + setup guide (LEEME.md)
 └── imagenes/                   # Assets directory (on server only, NOT in repo)
 ```
 
@@ -48,7 +50,7 @@ There is no build step. To test locally:
 1. Extract `tragantia-escape.zip` into a directory
 2. Serve with any static HTTP server (e.g., `python3 -m http.server 8000` from the extracted `tragantia-final/` folder)
 3. Open in a mobile browser or use Chrome DevTools device emulation
-4. Use test code `123` to authenticate
+4. Use test code `cazorlanature` to authenticate (`123` was removed from `codigos.js`)
 
 **Testing GPS without being on location:** Temporarily modify `CONFIG.destino.radio` to a large value (e.g., `99999`) in a portal HTML to bypass proximity checks, or use Chrome DevTools sensor emulation to fake GPS coordinates.
 
@@ -68,7 +70,7 @@ index.html → [valid code] → instructions modal → portal 1 → portal 2 →
 5. Proximity beeps (faster as player gets closer)
 6. Arrive at radius → activate camera visor
 7. Narrative text (typewriter effect) + portal-specific audio
-8. Quiz (5 questions; 4 in rio-tragantia.html)
+8. Quiz (5 questions; 4 in convento-merced.html and rio-tragantia.html)
 9. Complete → save points → show "Next Portal" button
 10. Navigate to next portal
 ```
@@ -104,7 +106,7 @@ const CONFIG = {
             opciones: ["Option A", "Option B", "Option C"],
             correcta: 0  // Zero-based index of correct answer
         },
-        // ... (5 questions per portal, 4 in portal 6)
+        // ... (5 questions per portal, 4 in portals 2 and 6)
     ]
 };
 ```
@@ -144,7 +146,7 @@ let estado = {
 | `mostrarExito()` | Completion screen, saves progress |
 | `siguientePunto()` | Navigates to next portal |
 | `salirMision()` | Returns to index.html with confirmation |
-| `limpiarRecursos()` | Releases GPS, camera, audio, timers |
+| (`pagehide` listener in `juego.js`) | Releases GPS, camera, wake lock |
 | `actualizarPuntosFlotante()` | Updates floating score badge |
 | `programarSusto()` / `ejecutarSusto()` | Random scare effects (audio + visual) |
 | `inicializarMapa()` | Sets up Leaflet map in radar container |
@@ -162,6 +164,7 @@ let estado = {
 ### JavaScript Conventions
 
 - **Vanilla JS only** — no frameworks, no jQuery
+- Portals use `viewport-fit=cover` without zoom blocking (accessibility); `index.html` adds `body.modo-jugador` (hides marketing sections) when there is a game in progress or the PWA is installed
 - Portal 1 (`plaza-corredera.html`) uses ES6+ syntax (arrow functions, `const`/`let`, template literals)
 - Portal 7 (`guarida-tragantia.html`) uses more compact, minified-style code with `function` declarations
 - Other portals (2-6) use a mix of arrow functions and standard functions
@@ -177,6 +180,30 @@ let estado = {
 - Portal completion bonus: **+50 points**
 - Wrong answers don't advance; the same question repeats
 
+## Shared module (`juego.js`)
+
+Exposes `window.Juego`. Each portal loads it before its inline script and calls these hooks:
+
+| Hook | Where |
+|------|-------|
+| `Juego.iniciarPortal(N)` | Right after saving `tragantia_progreso` (adds the 🎒 relic bag button) |
+| `Juego.brujula.activar()` + `Juego.iniciarBusqueda()` | Inside the "Activar búsqueda" click (iOS compass permission needs the gesture) |
+| `actualizarRumbo(lat, lng)` (global from `juego.js`) | `actualizarPosicion()`; calls `Juego.brujula.fijarRumbo(rumbo, distancia)`, which draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) and places `#puntoObjetivo` on the radar at the real bearing (north-up, like the map) |
+| `Juego.radioEfectivo(radio, accuracy)` + `Juego.vigilarLlegada(distancia, alConfirmar)` | Arrival check in `actualizarPosicion()`: radius grows with GPS accuracy (max +15 m); after 20 s nearby (40 m) a manual "Estoy frente al portal" button appears. Both are capped by the portal's own zone (`Juego.zonaPropia(N)` = half the distance to the nearest portal − 5 m) so neighbouring portals never overlap (portals 3 and 4 are only 56 m apart → 23 m zones). **`PORTALES` in `juego.js` keeps a copy of each portal's `lat`/`lng`: if you move a portal, update both `CONFIG.destino` and `juego.js`.** |
+| `Juego.marcarLlegada()` / `Juego.guardarFase('narrativa')` | `activarVisor()` / `finalizarNarracion()` |
+| `Juego.prepararReanudacion(total, reanudarQuizGuardado, reanudarEnPortal)` | On `DOMContentLoaded`; fills and shows `#avisoReanudar` |
+| `Juego.prepararPista(i, pregunta, elementos.quizContenido, aplicarCostePista)` | End of `cargarPregunta()`; hint costs 30 pts, needs ≥30 pts in the portal, removes one wrong option |
+| `Juego.registrarRespuesta(i, correcta, segundos)` | Both branches of `verificarRespuesta()` |
+| `Juego.completarPortal({puntos, correctas, incorrectas, segundos})` | `mostrarExito()` (portal 7: `mostrarPuntuacionFinal()`); shows the relic reveal and unlocks achievements |
+| `Juego.finalizarMision(totales)` | Portal 7 only; returns the rank `{titulo, estrellas}` |
+
+- **Shared portal functions (globals on `window`, defined once in `juego.js`, section "FUNCIONES COMUNES DE LOS PORTALES"):** `vibrar`, `solicitarWakeLock`, `calcularRumbo`, `actualizarRumbo`, `actualizarTendencia`, `mostrarDeltaPuntos`, `aplicarCostePista`, `saltarNarracion`, `reanudarEnPortal`, `guardarEstadoQuiz`, `reanudarQuizGuardado`, plus the `visibilitychange` (pause ambient audio, save quiz, re-request wake lock) and `pagehide` (release GPS, camera, wake lock) listeners. They read the portal's own globals by name (`estado`, `elementos`, `CONFIG`, `segundosTranscurridos`, `intervaloTimer`, `detenerPitidos`, `activarVisor`, `cargarPregunta`, `mostrarExito` / `mostrarBuscarPortal`...), so a portal must keep those names. Do not redefine them in a portal: a local `function` of the same name would shadow the shared one.
+- **Ranks** are based on points / max possible for the sealed portals (120 per question + 50 per portal).
+- **Shared UI layer:** `inyectarEstilos()` also injects the design/accessibility overrides for all portals (radar layout with scroll, safe areas, contrast, 44 px touch targets, `prefers-reduced-motion`, focus). Prefer adding cross-portal CSS there instead of editing 7 files.
+- `Juego.iniciarPortal(N)` also rebuilds the 7-dot `.contador-brechas`, adds a "Saltar ▸" button (calls the portal's `saltarNarracion()`) and a "🔄 Historia" button (calls `repetirNarracion()`), and applies the "modo sin sustos" (toggle in the 🎒 bag, key `tragantia_sin_sustos`, survives new games).
+- Wrong answers shake the quiz and lock the failed option; `completarPortal()` shows the next destination on the success screen and reveals the relic after 1.5 s.
+- **Usage stats:** `ESTADISTICAS_URL` at the top of `juego.js` (empty = events are only queued locally). Setup: `estadisticas/LEEME.md`.
+
 ## Persistence (localStorage)
 
 | Key | Type | Description |
@@ -190,21 +217,34 @@ let estado = {
 | `tragantia_portalX_completado` | `'true'` | Portal X completed (X = 1-7) |
 | `tragantia_portalX_puntos` | number | Points earned in portal X |
 | `tragantia_portalX_tiempo` | `'MM:SS'` | Time spent in portal X |
+| `tragantia_portalX_quiz` | JSON | Mid-quiz state (question, points, timer); saved every 5 s and on answers |
+| `tragantia_portalX_fase` | `'llegada'` / `'narrativa'` | Player already reached the portal / heard the narrative (resume without GPS) |
+| `tragantia_portalX_pista` | JSON | Hint used on the current question (which option was eliminated) |
+| `tragantia_portalX_descartadas` | JSON | Options already failed on the current question `{pregunta, indices}` (kept disabled after a reload; drives the Cabezota achievement) |
+| `tragantia_portalX_pistas`, `_correctas`, `_incorrectas` | number | Per-portal hint count and answers |
+| `tragantia_portalX_busqueda` | timestamp | When the GPS search started (for the Rastreador achievement and stats) |
+| `tragantia_logros` | JSON | Unlocked achievements `{id: timestamp}` |
+| `tragantia_pistas_total`, `tragantia_racha` | number | Total hints used / current first-try correct streak |
+| `tragantia_inicio_partida` | timestamp | Set when the first portal search starts (and on code validation as fallback); used for total mission time |
+| `tragantia_sesion` | string | Anonymous random id for usage stats |
+| `tragantia_sin_sustos` | `'true'` | "Modo sin sustos": no flashes or scare sounds |
+| `tragantia_eventos_pendientes` | JSON | Stats events waiting to be sent (max 300; survives "Borrar datos") |
 
-**Important:** Progress saves between portals but NOT within a portal. If the app closes mid-quiz, that portal restarts from GPS tracking.
+**In-portal save:** if the app closes mid-portal, the radar screen offers to resume: mid-quiz (same question, points, timer, used hint and failed options) or, if the player had already arrived, straight into the visor without GPS. On a correct answer `preguntaActual` is advanced and saved immediately (before the 800 ms visual pause) so a save in that window can never replay the question. **Replaying a sealed portal** (`PORTAL_YA_SELLADO` const at the top of each portal) never rewrites `tragantia_progreso`, totals, per-portal values, achievements or stats: `mostrarExito()` skips the writes and passes `repetido: true` to `completarPortal()`; portal 7 shows the stored final screen on load. `index.html`'s "Continuar" always goes to the first unsealed portal. Relics are derived from `tragantia_portalX_completado`. Validating a code (`Juego.nuevaPartida()`) wipes all `tragantia_*` game keys except auth and the stats queue.
 
 ## Authentication System
 
 - `codigos.js` contains an array `CODIGOS_VALIDOS` with plaintext codes (case-insensitive)
 - `index.html` loads this file and does a simple `.includes()` check
 - The README mentions SHA-256 hashing, but the current code uses **plaintext comparison**
-- Valid test code: `123`
+- Valid test code: `cazorlanature`
 - Codes are delivered to customers via WooCommerce Key Manager plugin
 
 ## Service Worker (sw.js)
 
 - Cache names: `tragantia-v3` (core + images), `tragantia-audio-v1` (audio)
-- **HTML/JS:** Network-first with cache fallback
+- **HTML and own `.js` (`juego.js`, `codigos.js`):** Network-first with cache fallback
+- **Non-GET requests** (stats POSTs) bypass the SW
 - **Audio (.mp3):** Cache-first with background network update
 - **Other assets:** Cache-first
 - **To force update:** Increment cache version names (`CACHE_NAME`, `AUDIO_CACHE`)
@@ -214,7 +254,7 @@ let estado = {
 | Portal | File | Notable Differences |
 |--------|------|-------------------|
 | 1 | `plaza-corredera.html` | Most complex (~1893 lines). Has detailed Leaflet map integrated into radar. Most commented code. Uses circular radar with map background. |
-| 2-5 | Various | Standard portals (~660-955 lines). Hexagonal radar design (portals 2-5 use `hex-ring` CSS). |
+| 2-5 | Various | Standard portals (~660-955 lines). Hexagonal radar design (portals 2-5 use `hex-ring` CSS). Portal 2 has 4 questions (the street-map question was removed when the map disappeared). |
 | 6 | `rio-tragantia.html` | Only 4 questions instead of 5. |
 | 7 | `guarida-tragantia.html` | Final portal. Uses TensorFlow.js MobileNet for "portal detection" via camera. Shows global results. Has `html2canvas` for screenshot. Removes `tragantia_progreso` on completion. Uses compact/minified code style. |
 
@@ -232,7 +272,7 @@ let estado = {
 ## Common Development Tasks
 
 ### Modifying a portal's questions or coordinates
-Edit the `CONFIG` object at the top of the portal's `<script>` section. Change `destino.lat`, `destino.lng`, `destino.radio`, or the `preguntas` array.
+Edit the `CONFIG` object at the top of the portal's `<script>` section. Change `destino.lat`, `destino.lng`, `destino.radio`, or the `preguntas` array. If you change `lat`/`lng`, copy them to the same portal in `PORTALES` of `juego.js` (used to keep arrival zones of nearby portals from overlapping).
 
 ### Adding new activation codes
 1. Add the new code string to the `CODIGOS_VALIDOS` array in `codigos.js`
@@ -245,7 +285,8 @@ Edit the `CONFIG` object at the top of the portal's `<script>` section. Change `
 3. Update navigation: previous portal's `siguientePunto()` and `tragantia_progreso` to point to new file
 4. Update `PORTALES` array in `index.html`
 5. Add new file to `CORE_FILES` in `sw.js`
-6. Update portal count references in UI text
+6. Add the portal (and its relic) to `PORTALES` in `juego.js`, load `juego.js`, call `Juego.iniciarPortal(N)` and the hooks listed in the Shared module section
+7. Update portal count references in UI text
 
 ### Updating the Service Worker
 Change `CACHE_NAME` and/or `AUDIO_CACHE` version strings in `sw.js`. The old caches are automatically deleted on activation.
@@ -260,8 +301,7 @@ Change `CACHE_NAME` and/or `AUDIO_CACHE` version strings in `sw.js`. The old cac
 
 ## Known Limitations & Future Improvements
 
-- **No in-portal save:** Progress within a portal (mid-quiz) is lost if app closes
 - **Plaintext answers:** Quiz correct answers visible in source code
 - **No ranking/leaderboard:** Would require a backend (e.g., Firebase)
 - **Offline maps:** Leaflet tiles don't work offline (only GPS + cache works)
-- **Code duplication:** Each portal duplicates ~500+ lines of common JS logic; extracting shared code into a module would reduce maintenance burden
+- **Code duplication:** Each portal still duplicates its core JS (GPS/beeps, camera, narrative typewriter, quiz, success screen, score modal, ~400 lines); the newer shared logic already lives in `juego.js` (see Shared module). New features go into `juego.js`
