@@ -542,7 +542,8 @@
         if (localStorage.getItem('tragantia_auth') !== 'true') {
             window.location.href = 'index.html';
         }
-        localStorage.setItem('tragantia_progreso', 'plaza-corredera.html');
+        const PORTAL_YA_SELLADO = localStorage.getItem('tragantia_portal1_completado') === 'true';
+        if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'plaza-corredera.html');
         Juego.iniciarPortal(1);
 
         // === CONFIGURACIÓN ===
@@ -728,6 +729,7 @@
             intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
             actualizarPuntosFlotante();
             solicitarWakeLock();
+            if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); return; }
             cargarPregunta();
         }
 
@@ -1176,7 +1178,7 @@
             // No ejecutar sustos durante la narración
             if (estado.narracionActiva) return;
 
-            vibrar([80, 40, 200]);
+            if (!Juego.sinSustos()) vibrar([80, 40, 200]);
             elementos.efectoSusto.classList.add('activo');
             elementos.audioSusto.currentTime = 0;
             elementos.audioSusto.volume = 0.6;
@@ -1296,10 +1298,12 @@
                 actualizarPuntosFlotante();
                 mostrarDeltaPuntos('+' + (puntos + bonus), '#39ff14');
 
+                // Avanzar y guardar ya: si la app se cierra en la pausa visual, no se repite la pregunta
+                estado.preguntaActual++;
+                guardarEstadoQuiz();
+
                 setTimeout(() => {
-                    estado.preguntaActual++;
                     estado.procesandoRespuesta = false;  // Desbloquear
-                    guardarEstadoQuiz();
 
                     if (estado.preguntaActual >= CONFIG.preguntas.length) {
                         clearInterval(intervaloTimer);
@@ -1326,7 +1330,7 @@
 
                 setTimeout(() => {
                     botones.forEach(btn => {
-                        btn.disabled = false;
+                        if (!btn.classList.contains('opcion-eliminada')) btn.disabled = false;
                         btn.classList.remove('incorrecta');
                     });
                     estado.procesandoRespuesta = false;  // Desbloquear para reintentar
@@ -1347,28 +1351,28 @@
             estado.puntuacionTotal += 50;
             
             // Guardar puntos de ESTE portal solamente
-            localStorage.setItem('tragantia_portal1_completado', 'true');
-            localStorage.setItem('tragantia_portal1_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_portal1_tiempo', tiempoStr);
-            localStorage.setItem('tragantia_portal1_correctas', estado.respuestasCorrectas);
-            localStorage.setItem('tragantia_portal1_incorrectas', estado.respuestasIncorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal1_completado', 'true');
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal1_puntos', estado.puntuacionTotal);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal1_tiempo', tiempoStr);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal1_correctas', estado.respuestasCorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal1_incorrectas', estado.respuestasIncorrectas);
             
             // Guardar total acumulado (en portal 1 es igual a los puntos del portal)
-            localStorage.setItem('tragantia_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_correctas_total', estado.respuestasCorrectas);
-            localStorage.setItem('tragantia_incorrectas_total', estado.respuestasIncorrectas);
-            localStorage.setItem('tragantia_bonus_total', estado.bonusTotal);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_puntos', estado.puntuacionTotal);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_correctas_total', estado.respuestasCorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_incorrectas_total', estado.respuestasIncorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_bonus_total', estado.bonusTotal);
             
             // Actualizar progreso al siguiente portal
-            localStorage.setItem('tragantia_progreso', 'convento-merced.html');
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'convento-merced.html');
 
             // Limpiar estado del quiz guardado y vibrar en señal de éxito
             localStorage.removeItem(CLAVE_ESTADO_QUIZ);
-            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos });
-            vibrar([80, 50, 80, 50, 200]);
+            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos, repetido: PORTAL_YA_SELLADO });
+            if (!PORTAL_YA_SELLADO) vibrar([80, 50, 80, 50, 200]);
 
             // Mostrar puntos en pantalla de éxito
-            elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + estado.puntuacionTotal + ' (+50 bonus portal)';
+            elementos.exitoPuntos.textContent = PORTAL_YA_SELLADO ? 'Portal ya sellado: tus puntos no cambian' : 'Puntos acumulados: ' + estado.puntuacionTotal + ' (+50 bonus portal)';
             
             // Actualizar botón flotante
             actualizarPuntosFlotante();

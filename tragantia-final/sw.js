@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tragantia-v7';
+const CACHE_NAME = 'tragantia-v8';
 const AUDIO_CACHE = 'tragantia-audio-v2';
 
 const CORE_FILES = [

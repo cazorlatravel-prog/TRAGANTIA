@@ -146,6 +146,7 @@
         .jg-btn-pista:disabled { cursor: default; }
         .jg-pista-texto { font-family: 'VT323', monospace; color: #f5c842; text-align: center; margin-top: 10px; letter-spacing: 1px; }
         .btn-opcion.opcion-eliminada { opacity: 0.25 !important; text-decoration: line-through; pointer-events: none !important; }
+        .btn-opcion.incorrecta.opcion-eliminada { opacity: 0.85 !important; }
         .rumbo-flecha.jg-alineada { color: #39ff14 !important; text-shadow: 0 0 12px rgba(57,255,20,0.8) !important; }
         .jg-resumen-final { margin: 10px 0 18px; text-align: left; }
 
@@ -594,12 +595,17 @@
     // alReanudarQuiz: continúa el quiz; alEntrarPortal: entra al visor sin GPS.
     function prepararReanudacion(totalPreguntas, alReanudarQuiz, alEntrarPortal) {
         const aviso = document.getElementById('avisoReanudar');
-        if (!aviso || portalCompletado(portalActual)) return;
+        if (!aviso) return;
         const texto = aviso.querySelector('p');
         const boton = aviso.querySelector('button');
         const quiz = leerJSON(clavePortal('quiz'), null);
         const fase = obtenerFase();
-        if (quiz) {
+        if (portalCompletado(portalActual)) {
+            if (typeof window.siguientePunto !== 'function') return;
+            texto.textContent = '◈ PORTAL YA SELLADO · TUS PUNTOS NO CAMBIARÁN';
+            boton.textContent = 'Ir al siguiente portal';
+            boton.onclick = () => window.siguientePunto();
+        } else if (quiz) {
             const n = (quiz.preguntaActual || 0) + 1;
             texto.textContent = n > totalPreguntas
                 ? '◈ RITUAL COMPLETADO · FALTA SELLAR EL PORTAL'
@@ -642,11 +648,18 @@
         opciones.insertAdjacentElement('afterend', btn);
 
         function eliminar(indice) {
-            if (botones[indice]) botones[indice].classList.add('opcion-eliminada');
+            if (botones[indice]) descartarOpcion(botones[indice]);
             btn.disabled = true;
             btn.textContent = '💡 PISTA USADA';
         }
         iniciarIndicadorBonus(contenedor);
+        // Opciones ya falladas en esta pregunta (se conservan tras recargar)
+        const descartadas = leerJSON(clavePortal('descartadas'), null);
+        if (descartadas && descartadas.pregunta !== indicePregunta) borrar(clavePortal('descartadas'));
+        const falladas = descartadasGuardadas(indicePregunta);
+        falladas.forEach(i => { if (botones[i]) descartarOpcion(botones[i]); });
+        preguntaDeFallos = indicePregunta;
+        fallosPreguntaActual = falladas.length;
         if (guardada && guardada.pregunta === indicePregunta) { eliminar(guardada.eliminada); return; }
 
         btn.addEventListener('click', () => {
@@ -682,8 +695,16 @@
                 quiz.classList.remove('jg-sacudida'); void quiz.offsetWidth; quiz.classList.add('jg-sacudida');
                 setTimeout(() => quiz.classList.remove('jg-sacudida'), 500);
             }
+            // La opción fallada queda descartada de inmediato (también para teclado) y se guarda
+            // para que siga descartada si se recarga la página
             const fallada = document.querySelector('.btn-opcion.incorrecta');
-            if (fallada) setTimeout(() => fallada.classList.add('opcion-eliminada'), 1050);
+            if (fallada) {
+                descartarOpcion(fallada);
+                const indice = parseInt(fallada.dataset.index, 10);
+                const lista = descartadasGuardadas(indicePregunta);
+                if (lista.indexOf(indice) === -1) lista.push(indice);
+                escribir(clavePortal('descartadas'), JSON.stringify({ pregunta: indicePregunta, indices: lista }));
+            }
             return;
         }
         if (segundos < 10) desbloquearLogro('relampago');
@@ -694,6 +715,15 @@
             if (racha >= 5) desbloquearLogro('racha');
         }
         fallosPreguntaActual = 0;
+    }
+
+    function descartarOpcion(boton) {
+        boton.classList.add('opcion-eliminada');
+        boton.disabled = true;
+    }
+    function descartadasGuardadas(indicePregunta) {
+        const d = leerJSON(clavePortal('descartadas'), null);
+        return d && d.pregunta === indicePregunta ? d.indices.slice() : [];
     }
 
     // Muestra bajo el cronómetro cuánto bonus de rapidez queda en la pregunta actual.
@@ -733,10 +763,13 @@
     // === PORTAL COMPLETADO ===
     // datos: { puntos, correctas, incorrectas, segundos }
     function completarPortal(datos, alCerrarReliquia) {
+        // Repetir un portal ya sellado no cambia puntos, logros ni estadísticas
+        if (datos.repetido) { prepararPantallaExito(); if (alCerrarReliquia) alCerrarReliquia(); return; }
         escribir(clavePortal('correctas'), String(datos.correctas || 0));
         escribir(clavePortal('incorrectas'), String(datos.incorrectas || 0));
         borrar(clavePortal('fase'));
         borrar(clavePortal('pista'));
+        borrar(clavePortal('descartadas'));
         borrar(clavePortal('busqueda'));
         evento('portal_completado', {
             puntos: datos.puntos, segundos: datos.segundos,
@@ -964,6 +997,7 @@
         zonaPropia: zonaPropia,
         vigilarLlegada: vigilarLlegada,
         fijarSinSustos: fijarSinSustos,
+        sinSustos: sinSustos,
         marcarLlegada: marcarLlegada,
         guardarFase: guardarFase,
         obtenerFase: obtenerFase,

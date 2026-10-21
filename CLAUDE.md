@@ -219,16 +219,17 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | `tragantia_portalX_quiz` | JSON | Mid-quiz state (question, points, timer); saved every 5 s and on answers |
 | `tragantia_portalX_fase` | `'llegada'` / `'narrativa'` | Player already reached the portal / heard the narrative (resume without GPS) |
 | `tragantia_portalX_pista` | JSON | Hint used on the current question (which option was eliminated) |
+| `tragantia_portalX_descartadas` | JSON | Options already failed on the current question `{pregunta, indices}` (kept disabled after a reload; drives the Cabezota achievement) |
 | `tragantia_portalX_pistas`, `_correctas`, `_incorrectas` | number | Per-portal hint count and answers |
 | `tragantia_portalX_busqueda` | timestamp | When the GPS search started (for the Rastreador achievement and stats) |
 | `tragantia_logros` | JSON | Unlocked achievements `{id: timestamp}` |
 | `tragantia_pistas_total`, `tragantia_racha` | number | Total hints used / current first-try correct streak |
-| `tragantia_inicio_partida` | timestamp | Set on code validation; used for total mission time |
+| `tragantia_inicio_partida` | timestamp | Set when the first portal search starts (and on code validation as fallback); used for total mission time |
 | `tragantia_sesion` | string | Anonymous random id for usage stats |
 | `tragantia_sin_sustos` | `'true'` | "Modo sin sustos": no flashes or scare sounds |
 | `tragantia_eventos_pendientes` | JSON | Stats events waiting to be sent (max 300; survives "Borrar datos") |
 
-**In-portal save:** if the app closes mid-portal, the radar screen offers to resume: mid-quiz (same question, points, timer and used hint) or, if the player had already arrived, straight into the visor without GPS. Relics are derived from `tragantia_portalX_completado`. Validating a code (`Juego.nuevaPartida()`) wipes all `tragantia_*` game keys except auth and the stats queue.
+**In-portal save:** if the app closes mid-portal, the radar screen offers to resume: mid-quiz (same question, points, timer, used hint and failed options) or, if the player had already arrived, straight into the visor without GPS. On a correct answer `preguntaActual` is advanced and saved immediately (before the 800 ms visual pause) so a save in that window can never replay the question. **Replaying a sealed portal** (`PORTAL_YA_SELLADO` const at the top of each portal) never rewrites `tragantia_progreso`, totals, per-portal values, achievements or stats: `mostrarExito()` skips the writes and passes `repetido: true` to `completarPortal()`; portal 7 shows the stored final screen on load. `index.html`'s "Continuar" always goes to the first unsealed portal. Relics are derived from `tragantia_portalX_completado`. Validating a code (`Juego.nuevaPartida()`) wipes all `tragantia_*` game keys except auth and the stats queue.
 
 ## Authentication System
 

@@ -492,7 +492,8 @@
     <script src="juego.js"></script>
     <script>
         if (localStorage.getItem('tragantia_auth') !== 'true') { window.location.href = 'index.html'; }
-        localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
+        var PORTAL_YA_SELLADO = localStorage.getItem('tragantia_portal7_completado') === 'true';
+        if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'guarida-tragantia.html');
         Juego.iniciarPortal(7);
 
         var CONFIG = {
@@ -612,6 +613,9 @@
 
             // Ofrecer reanudación si el portal se interrumpió (quiz a medias o ya llegado)
             Juego.prepararReanudacion(CONFIG.preguntas.length, reanudarQuizGuardado, reanudarEnPortal);
+
+            // Misión ya terminada: mostrar directamente el resultado guardado
+            if (PORTAL_YA_SELLADO) { elementos.pantallaRadar.style.display = 'none'; mostrarPuntuacionFinal(); }
         });
 
         function actualizarPuntosFlotante() { document.getElementById('puntosFlotante').textContent = puntosAnteriores + estado.puntuacionTotal; }
@@ -634,12 +638,12 @@
         function repetirNarracion() { estado.narracionActiva = true; estado.textoTerminado = false; estado.audioTerminado = false; elementos.btnRepetir.classList.remove('visible'); elementos.panelNarrativo.classList.add('activo'); elementos.audioAmbiente.volume = 0.1; elementos.audioNarrativo.currentTime = 0; elementos.audioNarrativo.volume = estado.audioSilenciado ? 0 : 0.9; elementos.audioNarrativo.play().catch(function() { estado.audioTerminado = true; verificarFinNarracion(); }); var texto = CONFIG.textoNarrativo; var i = 0; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.innerHTML = ''; var tw = estado.intervaloTexto = setInterval(function() { if (i < texto.length) { elementos.narrativoTexto.innerHTML += texto.charAt(i); i++; elementos.panelNarrativo.scrollTop = elementos.panelNarrativo.scrollHeight; } else { clearInterval(tw); estado.textoTerminado = true; verificarFinNarracion(); } }, 50); elementos.audioNarrativo.addEventListener('ended', function() { estado.audioTerminado = true; verificarFinNarracion(); }, { once: true }); }
         function toggleSilenciar() { estado.audioSilenciado = !estado.audioSilenciado; if (estado.audioSilenciado) { elementos.audioNarrativo.volume = 0; elementos.iconoAudio.style.opacity = '0.4'; elementos.btnSilenciar.textContent = 'Activar'; } else { elementos.audioNarrativo.volume = 0.9; elementos.iconoAudio.style.opacity = '1'; elementos.btnSilenciar.textContent = 'Silenciar'; } }
         function programarSusto() { if (!estado.visorActivo) return; setTimeout(function() { if (estado.visorActivo && elementos.modalQuiz.style.display !== 'block' && !estado.narracionActiva && elementos.pantallaVerdad.style.display !== 'block') ejecutarSusto(); programarSusto(); }, 5000 + Math.random() * 10000); }
-        function ejecutarSusto() { if (estado.narracionActiva || elementos.pantallaVerdad.style.display === 'block') return; vibrar([80, 40, 200]); elementos.efectoSusto.classList.add('activo'); elementos.audioSusto.currentTime = 0; elementos.audioSusto.volume = 0.9; elementos.audioSusto.play(); elementos.videoCamara.style.filter = 'contrast(5) brightness(5) hue-rotate(180deg) invert(1)'; setTimeout(function() { elementos.efectoSusto.classList.remove('activo'); elementos.videoCamara.style.filter = ''; }, 1500); }
+        function ejecutarSusto() { if (estado.narracionActiva || elementos.pantallaVerdad.style.display === 'block') return; if (!Juego.sinSustos()) vibrar([80, 40, 200]); elementos.efectoSusto.classList.add('activo'); elementos.audioSusto.currentTime = 0; elementos.audioSusto.volume = 0.9; elementos.audioSusto.play(); elementos.videoCamara.style.filter = 'contrast(5) brightness(5) hue-rotate(180deg) invert(1)'; setTimeout(function() { elementos.efectoSusto.classList.remove('activo'); elementos.videoCamara.style.filter = ''; }, 1500); }
         function crearIndicadoresProgreso() { elementos.quizProgreso.innerHTML = ''; CONFIG.preguntas.forEach(function(_, i) { var d = document.createElement('div'); d.className = 'progreso-dot' + (i === 0 ? ' activo' : ''); elementos.quizProgreso.appendChild(d); }); }
         function iniciarTimerQuiz() { segundosTranscurridos = 0; actualizarDisplayTimer(); intervaloTimer = setInterval(function() { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000); }
         function actualizarDisplayTimer() { var m = Math.floor(segundosTranscurridos/60).toString().padStart(2,'0'); var s = (segundosTranscurridos%60).toString().padStart(2,'0'); elementos.quizTimer.textContent = '⏱ '+m+':'+s; }
         function cargarPregunta() { estado.tiempoInicioPregunta = Date.now(); var p = CONFIG.preguntas[estado.preguntaActual]; document.querySelectorAll('.progreso-dot').forEach(function(d,i) { d.classList.remove('activo'); if (i<estado.preguntaActual) d.classList.add('completado'); if (i===estado.preguntaActual) d.classList.add('activo'); }); elementos.quizContenido.innerHTML = '<p class="quiz-pregunta">'+p.texto+'</p><div class="quiz-opciones">'+p.opciones.map(function(o,i) { return '<button class="btn-opcion" data-index="'+i+'">'+o+'</button>'; }).join('')+'</div>'; document.querySelectorAll('.btn-opcion').forEach(function(b) { b.addEventListener('click', function(e) { verificarRespuesta(parseInt(e.target.dataset.index)); }); }); Juego.prepararPista(estado.preguntaActual, p, elementos.quizContenido, aplicarCostePista); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal; }
-        function verificarRespuesta(idx) { if (estado.procesandoRespuesta) return; estado.procesandoRespuesta = true; var p = CONFIG.preguntas[estado.preguntaActual]; var btns = document.querySelectorAll('.btn-opcion'); btns.forEach(function(b) { b.style.pointerEvents = 'none'; }); var tr = (Date.now()-estado.tiempoInicioPregunta)/1000; if (idx===p.correcta) { btns[idx].classList.add('correcta'); vibrar(60); var pts = 100, bon = 0; if (tr<15) bon=20; else if (tr<30) bon=15; else if (tr<60) bon=10; else if (tr<120) bon=5; estado.puntuacionTotal += pts+bon; estado.bonusTotal += bon; estado.respuestasCorrectas++; Juego.registrarRespuesta(estado.preguntaActual, true, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (+'+(pts+bon)+')'; actualizarPuntosFlotante(); mostrarDeltaPuntos('+'+(pts+bon), '#39ff14'); setTimeout(function() { estado.preguntaActual++; estado.procesandoRespuesta = false; guardarEstadoQuiz(); if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); estado.tiempoTotalJuego = segundosTranscurridos; mostrarBuscarPortal(); } else { cargarPregunta(); } }, 1000); } else { btns[idx].classList.add('incorrecta'); vibrar([250]); estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal-25); estado.respuestasIncorrectas++; Juego.registrarRespuesta(estado.preguntaActual, false, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (-25)'; actualizarPuntosFlotante(); mostrarDeltaPuntos('-25', '#ff5252'); guardarEstadoQuiz(); setTimeout(function() { btns.forEach(function(b) { b.classList.remove('incorrecta'); b.style.pointerEvents = 'auto'; }); estado.procesandoRespuesta = false; }, 1000); } }
+        function verificarRespuesta(idx) { if (estado.procesandoRespuesta) return; estado.procesandoRespuesta = true; var p = CONFIG.preguntas[estado.preguntaActual]; var btns = document.querySelectorAll('.btn-opcion'); btns.forEach(function(b) { b.style.pointerEvents = 'none'; }); var tr = (Date.now()-estado.tiempoInicioPregunta)/1000; if (idx===p.correcta) { btns[idx].classList.add('correcta'); vibrar(60); var pts = 100, bon = 0; if (tr<15) bon=20; else if (tr<30) bon=15; else if (tr<60) bon=10; else if (tr<120) bon=5; estado.puntuacionTotal += pts+bon; estado.bonusTotal += bon; estado.respuestasCorrectas++; Juego.registrarRespuesta(estado.preguntaActual, true, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (+'+(pts+bon)+')'; actualizarPuntosFlotante(); mostrarDeltaPuntos('+'+(pts+bon), '#39ff14'); estado.preguntaActual++; guardarEstadoQuiz(); setTimeout(function() { estado.procesandoRespuesta = false; if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); estado.tiempoTotalJuego = segundosTranscurridos; mostrarBuscarPortal(); } else { cargarPregunta(); } }, 1000); } else { btns[idx].classList.add('incorrecta'); vibrar([250]); estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal-25); estado.respuestasIncorrectas++; Juego.registrarRespuesta(estado.preguntaActual, false, tr); elementos.quizPuntos.textContent = 'Puntos: '+estado.puntuacionTotal+' (-25)'; actualizarPuntosFlotante(); mostrarDeltaPuntos('-25', '#ff5252'); guardarEstadoQuiz(); setTimeout(function() { btns.forEach(function(b) { b.classList.remove('incorrecta'); b.style.pointerEvents = 'auto'; }); estado.procesandoRespuesta = false; }, 1000); } }
 
         async function mostrarBuscarPortal() { elementos.modalQuiz.style.display = 'none'; elementos.visorReves.style.display = 'none'; elementos.pantallaBuscarPortal.style.display = 'block'; elementos.audioAmbiente.volume = 0.2; try { var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } }); elementos.buscarVideo.srcObject = stream; elementos.buscarCargando.textContent = 'Cargando detector de portal...'; await cargarModeloDeteccion(); elementos.buscarCargando.textContent = 'Buscando portal...'; estado.deteccionActiva = true; detectarPortal(); } catch (err) { elementos.buscarCargando.textContent = 'Toca para continuar'; document.getElementById('buscarOverlay').addEventListener('click', function() { portalEncontrado(); }, { once: true }); } }
         async function cargarModeloDeteccion() { try { mobilenetModel = await mobilenet.load({ version: 2, alpha: 1.0 }); referenciaFeatures1 = await extraerCaracteristicas(elementos.portalRef1); referenciaFeatures2 = await extraerCaracteristicas(elementos.portalRef2); estado.modeloCargado = true; } catch (err) { estado.modeloCargado = false; } }
@@ -657,26 +661,32 @@
             elementos.audioVerdad.pause();
             elementos.pantallaVerdad.style.display = 'none';
             elementos.pantallaPuntuacion.style.display = 'block';
-            estado.puntuacionTotal += 50;
+            if (!PORTAL_YA_SELLADO) estado.puntuacionTotal += 50;
             var totalPuntos = puntosAnteriores + estado.puntuacionTotal;
             var totalCorrectas = correctasAnteriores + estado.respuestasCorrectas;
             var totalIncorrectas = incorrectasAnteriores + estado.respuestasIncorrectas;
             var totalBonus = bonusAnteriores + estado.bonusTotal;
             var mT = Math.floor(estado.tiempoTotalJuego/60).toString().padStart(2,'0');
             var sT = (estado.tiempoTotalJuego%60).toString().padStart(2,'0');
-            localStorage.setItem('tragantia_puntos', totalPuntos);
-            localStorage.setItem('tragantia_correctas_total', totalCorrectas);
-            localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
-            localStorage.setItem('tragantia_bonus_total', totalBonus);
-            localStorage.setItem('tragantia_portal7_completado', 'true');
-            localStorage.setItem('tragantia_portal7_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_portal7_tiempo', mT+':'+sT);
-            localStorage.setItem('tragantia_completado', 'true');
-            localStorage.removeItem(CLAVE_ESTADO_QUIZ);
-            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: estado.tiempoTotalJuego });
-            var rango = Juego.finalizarMision({ puntos: totalPuntos, correctas: totalCorrectas, incorrectas: totalIncorrectas });
+            var rango;
+            if (PORTAL_YA_SELLADO) {
+                // Volver a abrir la pantalla final no cambia nada: solo se muestra lo guardado
+                rango = Juego.calcularRango(totalPuntos);
+            } else {
+                localStorage.setItem('tragantia_puntos', totalPuntos);
+                localStorage.setItem('tragantia_correctas_total', totalCorrectas);
+                localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
+                localStorage.setItem('tragantia_bonus_total', totalBonus);
+                localStorage.setItem('tragantia_portal7_completado', 'true');
+                localStorage.setItem('tragantia_portal7_puntos', estado.puntuacionTotal);
+                localStorage.setItem('tragantia_portal7_tiempo', mT+':'+sT);
+                localStorage.setItem('tragantia_completado', 'true');
+                localStorage.removeItem(CLAVE_ESTADO_QUIZ);
+                Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: estado.tiempoTotalJuego });
+                rango = Juego.finalizarMision({ puntos: totalPuntos, correctas: totalCorrectas, incorrectas: totalIncorrectas });
+                vibrar([80, 50, 80, 50, 200]);
+            }
             rangoFinal = rango.titulo;
-            vibrar([80, 50, 80, 50, 200]);
             var totalP = totalCorrectas + totalIncorrectas;
             var prec = totalP > 0 ? Math.round((totalCorrectas/totalP)*100) : 100;
             elementos.puntuacionFinal.textContent = totalPuntos;

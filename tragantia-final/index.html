@@ -1573,6 +1573,7 @@
             const btnReanudar = document.getElementById('btnReanudar');
             if (!siguiente) {
                 paso.textContent = '✓ Todos los portales sellados';
+                btnReanudar.textContent = 'Ver mi resultado';
             } else {
                 let quiz = null;
                 try { quiz = JSON.parse(localStorage.getItem('tragantia_' + siguiente.key + '_quiz') || 'null'); } catch (e) {}
@@ -1636,16 +1637,19 @@
         }
 
         function reanudarMision() {
-            const p = localStorage.getItem('tragantia_progreso');
-            if (p) window.location.href = p;
+            // Siempre al primer portal sin sellar (el mismo que anuncia el botón)
+            const siguiente = obtenerSiguientePortal();
+            window.location.href = siguiente ? siguiente.archivo : 'guarida-tragantia.html';
         }
 
         function borrarProgreso() {
             if (confirm("Se borrarán todos los datos. Deberás introducir el código de nuevo.")) {
                 Juego.evento('borrado_progreso');
                 const pendientes = localStorage.getItem('tragantia_eventos_pendientes');
+                const sinSustos = localStorage.getItem('tragantia_sin_sustos');
                 localStorage.clear();
                 if (pendientes) localStorage.setItem('tragantia_eventos_pendientes', pendientes);
+                if (sinSustos) localStorage.setItem('tragantia_sin_sustos', sinSustos);
                 window.location.reload();
             }
         }
@@ -1664,7 +1668,7 @@
                 const completado = localStorage.getItem('tragantia_' + portal.key + '_completado') === 'true';
                 if (!completado) return portal;
             }
-            return PORTALES[PORTALES.length - 1];
+            return null;
         }
 
         function renderizarProgreso() {
@@ -1679,8 +1683,8 @@
                 const tiempo = localStorage.getItem('tragantia_' + portal.key + '_tiempo') || '--:--';
                 totalPuntos += puntos;
 
-                const esActivo = portal.id === siguientePortal.id && !completado;
-                const esBloqueado = portal.id > siguientePortal.id && !completado;
+                const esActivo = !!siguientePortal && portal.id === siguientePortal.id && !completado;
+                const esBloqueado = !!siguientePortal && portal.id > siguientePortal.id && !completado;
 
                 let clase = 'portal-item';
                 if (completado) clase += ' completado';

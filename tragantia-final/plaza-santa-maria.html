@@ -469,7 +469,8 @@
     <script src="juego.js"></script>
     <script>
         if (localStorage.getItem('tragantia_auth') !== 'true') window.location.href = 'index.html';
-        localStorage.setItem('tragantia_progreso', 'plaza-santa-maria.html');
+        const PORTAL_YA_SELLADO = localStorage.getItem('tragantia_portal5_completado') === 'true';
+        if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'plaza-santa-maria.html');
         Juego.iniciarPortal(5);
 
         const CONFIG = {
@@ -606,6 +607,7 @@
             intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
             actualizarPuntosFlotante();
             solicitarWakeLock();
+            if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); return; }
             cargarPregunta();
         }
         
@@ -848,7 +850,7 @@
 
         function ejecutarSusto() {
             if (estado.narracionActiva) return;
-            vibrar([80, 40, 200]);
+            if (!Juego.sinSustos()) vibrar([80, 40, 200]);
             elementos.efectoSusto.classList.add('activo');
             elementos.audioSusto.currentTime = 0;
             elementos.audioSusto.volume = 0.9;
@@ -921,10 +923,10 @@
                 Juego.registrarRespuesta(estado.preguntaActual, true, tiempoRespuesta);
                 elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (+' + (puntos + bonus) + ')'; actualizarPuntosFlotante();
                 mostrarDeltaPuntos('+' + (puntos + bonus), '#39ff14');
+                estado.preguntaActual++;
+                guardarEstadoQuiz();
                 setTimeout(() => {
-                    estado.preguntaActual++;
                     estado.procesandoRespuesta = false;
-                    guardarEstadoQuiz();
                     if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); }
                     else cargarPregunta();
                 }, 800);
@@ -938,7 +940,7 @@
                 mostrarDeltaPuntos('-25', '#ff5252');
                 guardarEstadoQuiz();
                 ejecutarSusto();
-                setTimeout(() => { btns.forEach(btn => { btn.disabled = false; btn.classList.remove('incorrecta'); }); estado.procesandoRespuesta = false; }, 1000);
+                setTimeout(() => { btns.forEach(btn => { if (!btn.classList.contains('opcion-eliminada')) btn.disabled = false; btn.classList.remove('incorrecta'); }); estado.procesandoRespuesta = false; }, 1000);
             }
         }
 
@@ -956,22 +958,22 @@
             const totalBonus = bonusAnteriores + estado.bonusTotal;
             
             // Guardar totales acumulados
-            localStorage.setItem('tragantia_puntos', totalPuntos);
-            localStorage.setItem('tragantia_correctas_total', totalCorrectas);
-            localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
-            localStorage.setItem('tragantia_bonus_total', totalBonus);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_puntos', totalPuntos);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_correctas_total', totalCorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_incorrectas_total', totalIncorrectas);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_bonus_total', totalBonus);
             
             const mins = Math.floor(segundosTranscurridos / 60).toString().padStart(2, '0');
             const secs = (segundosTranscurridos % 60).toString().padStart(2, '0');
-            localStorage.setItem('tragantia_portal5_completado', 'true');
-            localStorage.setItem('tragantia_portal5_puntos', estado.puntuacionTotal);
-            localStorage.setItem('tragantia_portal5_tiempo', mins + ':' + secs);
-            localStorage.setItem('tragantia_progreso', 'rio-tragantia.html');
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal5_completado', 'true');
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal5_puntos', estado.puntuacionTotal);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_portal5_tiempo', mins + ':' + secs);
+            if (!PORTAL_YA_SELLADO) localStorage.setItem('tragantia_progreso', 'rio-tragantia.html');
             localStorage.removeItem(CLAVE_ESTADO_QUIZ);
-            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos });
-            vibrar([80, 50, 80, 50, 200]);
+            Juego.completarPortal({ puntos: estado.puntuacionTotal, correctas: estado.respuestasCorrectas, incorrectas: estado.respuestasIncorrectas, segundos: segundosTranscurridos, repetido: PORTAL_YA_SELLADO });
+            if (!PORTAL_YA_SELLADO) vibrar([80, 50, 80, 50, 200]);
             
-            elementos.exitoPuntos.textContent = 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
+            elementos.exitoPuntos.textContent = PORTAL_YA_SELLADO ? 'Portal ya sellado: tus puntos no cambian' : 'Puntos acumulados: ' + totalPuntos + ' (+50 bonus portal)';
             actualizarPuntosFlotante();
             elementos.audioAmbiente.pause();
         }
