@@ -706,10 +706,8 @@
                     doubleClickZoom: false
                 });
                 
-                // Tiles de OpenStreetMap con estilo oscuro
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19
-                }).addTo(mapa);
+                // Mapa oscuro sin clave de API (definido en juego.js)
+                Juego.capaMapa().addTo(mapa);
                 
                 // Marcador del destino (portal)
                 const iconoPortal = L.divIcon({

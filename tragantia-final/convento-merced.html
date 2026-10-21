@@ -586,7 +586,7 @@
                 if (!mapaDiv) return;
                 mapaDiv.classList.remove('oculto');
                 mapa = L.map('mapaFondo', { center: [CONFIG.destino.lat, CONFIG.destino.lng], zoom: 17, zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false });
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapa);
+                Juego.capaMapa().addTo(mapa);
                 const iconoPortal = L.divIcon({ className: 'marcador-portal', html: '<div style="width:16px;height:16px;background:#ff1744;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px #ff1744;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
                 marcadorDestino = L.marker([CONFIG.destino.lat, CONFIG.destino.lng], { icon: iconoPortal }).addTo(mapa);
                 const iconoUsuario = L.divIcon({ className: 'marcador-usuario', html: '<div style="width:12px;height:12px;background:#00ff41;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px #00ff41;"></div>', iconSize: [12, 12], iconAnchor: [6, 6] });

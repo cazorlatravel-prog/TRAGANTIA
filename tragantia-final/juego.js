@@ -149,6 +149,8 @@
         .btn-opcion.incorrecta.opcion-eliminada { opacity: 0.85 !important; }
         .rumbo-flecha.jg-alineada { color: #39ff14 !important; text-shadow: 0 0 12px rgba(57,255,20,0.8) !important; }
         .jg-resumen-final { margin: 10px 0 18px; text-align: left; }
+        .jg-mapa-oscuro { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.05) saturate(0.25); }
+        .jg-atribucion { font-family: 'VT323', monospace; font-size: 0.85rem; color: #8f8a82; letter-spacing: 0.05em; margin: -10px 0 6px; }
 
         /* ===== Revisión de diseño y usabilidad ===== */
         :root { --st-gray: #8f8a82; --jg-texto-2: #c9c2b6; --jg-texto-3: #a39d93; --jg-rojo-texto: #ff4d58; }
@@ -338,6 +340,17 @@
     }
     window.addEventListener('online', enviarPendientes);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') enviarAlSalir(); });
+
+    // === MAPA DEL RADAR ===
+    // CARTO empezó a exigir clave de API para sus mapas oscuros (las teselas llegan con la marca
+    // "API KEY REQUIRED"). Se usa OpenStreetMap, que no la necesita, oscurecido con un filtro CSS.
+    function capaMapa() {
+        return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            className: 'jg-mapa-oscuro',
+            attribution: '© OpenStreetMap'
+        });
+    }
 
     // === FUNCIONES COMUNES DE LOS PORTALES ===
     // Antes estaban copiadas en los 7 portales. Trabajan sobre las variables globales que
@@ -1099,6 +1112,15 @@
             if (resolver) new MutationObserver(sincronizar).observe(resolver, { attributes: true, attributeFilter: ['style'] });
         }
 
+        // Atribución del mapa (OpenStreetMap la exige), debajo del radar
+        const radar = document.querySelector('.radar-container');
+        if (radar && !document.querySelector('.jg-atribucion')) {
+            const atribucion = document.createElement('p');
+            atribucion.className = 'jg-atribucion';
+            atribucion.textContent = 'Mapa © OpenStreetMap';
+            radar.insertAdjacentElement('afterend', atribucion);
+        }
+
         // Nombres accesibles para botones que solo tienen emoji
         const etiquetas = { compartirWhatsApp: 'Compartir en WhatsApp', compartirTwitter: 'Compartir en X', compartirFacebook: 'Compartir en Facebook', copiarEnlace: 'Copiar enlace' };
         document.querySelectorAll('.btn-red').forEach(b => {
@@ -1135,6 +1157,7 @@
         iniciarPortal: iniciarPortal,
         evento: evento,
         brujula: brujula,
+        capaMapa: capaMapa,
         iniciarBusqueda: iniciarBusqueda,
         radioEfectivo: radioEfectivo,
         zonaPropia: zonaPropia,

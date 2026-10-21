@@ -15,7 +15,7 @@ GPS-based urban escape room PWA set in Cazorla (Jaén, Spain). Players visit 7 p
 - **PWA:** Service Worker (`sw.js`) + `manifest.json` for offline support
 - **GPS:** `navigator.geolocation.watchPosition()` for real-time tracking
 - **Camera:** `navigator.mediaDevices.getUserMedia()` for AR-style visor
-- **Maps:** Leaflet.js 1.9.4 with CartoDB dark tiles
+- **Maps:** Leaflet.js 1.9.4 with OpenStreetMap tiles darkened by a CSS filter (`Juego.capaMapa()`; CARTO's dark tiles now require an API key)
 - **Fonts:** Google Fonts (Creepster, Orbitron, VT323, Special Elite)
 - **No build step.** Files are deployed directly to the web server as-is.
 
@@ -263,7 +263,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | Library | Version | Usage |
 |---------|---------|-------|
 | Leaflet.js | 1.9.4 | Interactive maps (via unpkg CDN) |
-| CartoDB dark tiles | — | Map tile layer |
+| OpenStreetMap tiles | — | Map tile layer (no API key; `Juego.capaMapa()` adds the `.jg-mapa-oscuro` dark filter and a "Mapa © OpenStreetMap" credit under the radar) |
 | Google Fonts | — | Creepster, Orbitron, VT323, Special Elite |
 | TensorFlow.js | 4.10.0 | Portal 7 only: object detection |
 | MobileNet | 2.1.0 | Portal 7 only: image classification |
