@@ -515,40 +515,12 @@
         var mobilenetModel = null, referenciaFeatures1 = null, referenciaFeatures2 = null;
         var intervaloTimer = null, segundosTranscurridos = 0;
         var mapa = null, marcadorUsuario = null, marcadorDestino = null;
-        var wakeLock = null, distanciaAnterior = null;
         var CLAVE_ESTADO_QUIZ = 'tragantia_portal7_quiz';
         var rangoFinal = '';
 
-        // === VIBRACIÓN HÁPTICA ===
-        function vibrar(patron) { if (navigator.vibrate) { try { navigator.vibrate(patron); } catch (e) {} } }
+        // Funciones comunes a todos los portales (vibrar, wake lock, rumbo, pistas, saltar narración,
+        // guardado y reanudación del quiz): definidas en juego.js
 
-        // === WAKE LOCK: mantener pantalla encendida durante la misión ===
-        async function solicitarWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
-        document.addEventListener('visibilitychange', function() { if (!elementos) return; if (document.visibilityState === 'visible') { solicitarWakeLock(); if (estado.visorActivo) elementos.audioAmbiente.play().catch(function(){}); } else { elementos.audioAmbiente.pause(); if (elementos.modalQuiz.style.display === 'block' && estado.preguntaActual < CONFIG.preguntas.length) guardarEstadoQuiz(); } });
-
-        // === LIMPIEZA DE RECURSOS AL SALIR ===
-        window.addEventListener('pagehide', function() { detenerPitidos(); if (estado.watchId !== null) navigator.geolocation.clearWatch(estado.watchId); if (elementos && elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(function(t){t.stop();}); if (elementos && elementos.buscarVideo.srcObject) elementos.buscarVideo.srcObject.getTracks().forEach(function(t){t.stop();}); if (wakeLock) { try { wakeLock.release(); } catch (e) {} } });
-
-        // === RUMBO HACIA EL DESTINO ===
-        function calcularRumbo(lat1, lng1, lat2, lng2) { var f1 = lat1*Math.PI/180, f2 = lat2*Math.PI/180, dl = (lng2-lng1)*Math.PI/180; var y = Math.sin(dl)*Math.cos(f2); var x = Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl); return (Math.atan2(y, x)*180/Math.PI+360)%360; }
-        function actualizarRumbo(lat, lng) { Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng), calcularDistancia(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng)); }
-        function actualizarTendencia(distancia) { var el = document.getElementById('tendenciaDistancia'); if (distanciaAnterior !== null && Math.abs(distancia-distanciaAnterior) > 2) { if (distancia < distanciaAnterior) { el.textContent = '▼ TE ACERCAS'; el.className = 'tendencia-distancia acercando'; } else { el.textContent = '▲ TE ALEJAS'; el.className = 'tendencia-distancia alejando'; } } distanciaAnterior = distancia; }
-
-        // === ANIMACIÓN DE PUNTOS GANADOS/PERDIDOS ===
-        function mostrarDeltaPuntos(texto, color) { var el = document.getElementById('deltaPuntos'); el.textContent = texto; el.style.color = color; el.classList.remove('animar'); void el.offsetWidth; el.classList.add('animar'); }
-
-        // === PISTAS: descontar su coste ===
-        function aplicarCostePista(coste) { if (estado.procesandoRespuesta) return false; if (estado.puntuacionTotal < coste) return 'sin_puntos'; estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - coste); elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-' + coste + ' pista)'; actualizarPuntosFlotante(); mostrarDeltaPuntos('-' + coste, '#f5c842'); guardarEstadoQuiz(); }
-
-        // === SALTAR LA NARRACIÓN (muestra el texto completo y habilita el sellado) ===
-        function saltarNarracion() { if (!estado.narracionActiva) return; clearInterval(estado.intervaloTexto); elementos.narrativoTexto.textContent = CONFIG.textoNarrativo; elementos.audioNarrativo.pause(); estado.textoTerminado = true; estado.audioTerminado = true; verificarFinNarracion(); }
-
-        // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
-        function reanudarEnPortal(fase) { elementos.audioSusto.play().then(function() { elementos.audioSusto.pause(); }).catch(function(){}); elementos.audioVerdad.play().then(function() { elementos.audioVerdad.pause(); elementos.audioVerdad.currentTime = 0; }).catch(function(){}); solicitarWakeLock(); if (fase === 'narrativa') estado.narrativoMostrado = true; activarVisor(); }
-
-        // === PERSISTENCIA DEL QUIZ (reanudar si se cierra a mitad) ===
-        function guardarEstadoQuiz() { try { localStorage.setItem(CLAVE_ESTADO_QUIZ, JSON.stringify({ preguntaActual: estado.preguntaActual, puntuacionTotal: estado.puntuacionTotal, respuestasCorrectas: estado.respuestasCorrectas, respuestasIncorrectas: estado.respuestasIncorrectas, bonusTotal: estado.bonusTotal, segundos: segundosTranscurridos })); } catch (e) {} }
-        function reanudarQuizGuardado() { var guardado = null; try { guardado = JSON.parse(localStorage.getItem(CLAVE_ESTADO_QUIZ) || 'null'); } catch (e) {} if (!guardado) return; estado.preguntaActual = guardado.preguntaActual || 0; estado.puntuacionTotal = guardado.puntuacionTotal || 0; estado.respuestasCorrectas = guardado.respuestasCorrectas || 0; estado.respuestasIncorrectas = guardado.respuestasIncorrectas || 0; estado.bonusTotal = guardado.bonusTotal || 0; segundosTranscurridos = guardado.segundos || 0; document.getElementById('avisoReanudar').style.display = 'none'; elementos.pantallaRadar.style.display = 'none'; solicitarWakeLock(); if (estado.preguntaActual >= CONFIG.preguntas.length) { estado.tiempoTotalJuego = segundosTranscurridos; elementos.audioVerdad.play().then(function() { elementos.audioVerdad.pause(); elementos.audioVerdad.currentTime = 0; }).catch(function(){}); mostrarBuscarPortal(); return; } elementos.modalQuiz.style.display = 'block'; actualizarDisplayTimer(); if (intervaloTimer) clearInterval(intervaloTimer); intervaloTimer = setInterval(function() { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000); actualizarPuntosFlotante(); solicitarWakeLock(); cargarPregunta(); }
 
         // === TODO DENTRO DE DOMContentLoaded ===
         document.addEventListener('DOMContentLoaded', function() {

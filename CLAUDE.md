@@ -70,7 +70,7 @@ index.html → [valid code] → instructions modal → portal 1 → portal 2 →
 5. Proximity beeps (faster as player gets closer)
 6. Arrive at radius → activate camera visor
 7. Narrative text (typewriter effect) + portal-specific audio
-8. Quiz (5 questions; 4 in rio-tragantia.html)
+8. Quiz (5 questions; 4 in convento-merced.html and rio-tragantia.html)
 9. Complete → save points → show "Next Portal" button
 10. Navigate to next portal
 ```
@@ -106,7 +106,7 @@ const CONFIG = {
             opciones: ["Option A", "Option B", "Option C"],
             correcta: 0  // Zero-based index of correct answer
         },
-        // ... (5 questions per portal, 4 in portal 6)
+        // ... (5 questions per portal, 4 in portals 2 and 6)
     ]
 };
 ```
@@ -146,7 +146,7 @@ let estado = {
 | `mostrarExito()` | Completion screen, saves progress |
 | `siguientePunto()` | Navigates to next portal |
 | `salirMision()` | Returns to index.html with confirmation |
-| `limpiarRecursos()` | Releases GPS, camera, audio, timers |
+| (`pagehide` listener in `juego.js`) | Releases GPS, camera, wake lock |
 | `actualizarPuntosFlotante()` | Updates floating score badge |
 | `programarSusto()` / `ejecutarSusto()` | Random scare effects (audio + visual) |
 | `inicializarMapa()` | Sets up Leaflet map in radar container |
@@ -188,7 +188,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 |------|-------|
 | `Juego.iniciarPortal(N)` | Right after saving `tragantia_progreso` (adds the 🎒 relic bag button) |
 | `Juego.brujula.activar()` + `Juego.iniciarBusqueda()` | Inside the "Activar búsqueda" click (iOS compass permission needs the gesture) |
-| `Juego.brujula.fijarRumbo(rumbo, distancia)` | `actualizarRumbo()`; draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) and places `#puntoObjetivo` on the radar at the real bearing (north-up, like the map) |
+| `actualizarRumbo(lat, lng)` (global from `juego.js`) | `actualizarPosicion()`; calls `Juego.brujula.fijarRumbo(rumbo, distancia)`, which draws `#rumboFlecha` / `#rumboTexto` relative to device heading (falls back to north-relative) and places `#puntoObjetivo` on the radar at the real bearing (north-up, like the map) |
 | `Juego.radioEfectivo(radio, accuracy)` + `Juego.vigilarLlegada(distancia, alConfirmar)` | Arrival check in `actualizarPosicion()`: radius grows with GPS accuracy (max +15 m); after 20 s nearby (40 m) a manual "Estoy frente al portal" button appears. Both are capped by the portal's own zone (`Juego.zonaPropia(N)` = half the distance to the nearest portal − 5 m) so neighbouring portals never overlap (portals 3 and 4 are only 56 m apart → 23 m zones). **`PORTALES` in `juego.js` keeps a copy of each portal's `lat`/`lng`: if you move a portal, update both `CONFIG.destino` and `juego.js`.** |
 | `Juego.marcarLlegada()` / `Juego.guardarFase('narrativa')` | `activarVisor()` / `finalizarNarracion()` |
 | `Juego.prepararReanudacion(total, reanudarQuizGuardado, reanudarEnPortal)` | On `DOMContentLoaded`; fills and shows `#avisoReanudar` |
@@ -197,6 +197,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | `Juego.completarPortal({puntos, correctas, incorrectas, segundos})` | `mostrarExito()` (portal 7: `mostrarPuntuacionFinal()`); shows the relic reveal and unlocks achievements |
 | `Juego.finalizarMision(totales)` | Portal 7 only; returns the rank `{titulo, estrellas}` |
 
+- **Shared portal functions (globals on `window`, defined once in `juego.js`, section "FUNCIONES COMUNES DE LOS PORTALES"):** `vibrar`, `solicitarWakeLock`, `calcularRumbo`, `actualizarRumbo`, `actualizarTendencia`, `mostrarDeltaPuntos`, `aplicarCostePista`, `saltarNarracion`, `reanudarEnPortal`, `guardarEstadoQuiz`, `reanudarQuizGuardado`, plus the `visibilitychange` (pause ambient audio, save quiz, re-request wake lock) and `pagehide` (release GPS, camera, wake lock) listeners. They read the portal's own globals by name (`estado`, `elementos`, `CONFIG`, `segundosTranscurridos`, `intervaloTimer`, `detenerPitidos`, `activarVisor`, `cargarPregunta`, `mostrarExito` / `mostrarBuscarPortal`...), so a portal must keep those names. Do not redefine them in a portal: a local `function` of the same name would shadow the shared one.
 - **Ranks** are based on points / max possible for the sealed portals (120 per question + 50 per portal).
 - **Shared UI layer:** `inyectarEstilos()` also injects the design/accessibility overrides for all portals (radar layout with scroll, safe areas, contrast, 44 px touch targets, `prefers-reduced-motion`, focus). Prefer adding cross-portal CSS there instead of editing 7 files.
 - `Juego.iniciarPortal(N)` also rebuilds the 7-dot `.contador-brechas`, adds a "Saltar ▸" button (calls the portal's `saltarNarracion()`) and a "🔄 Historia" button (calls `repetirNarracion()`), and applies the "modo sin sustos" (toggle in the 🎒 bag, key `tragantia_sin_sustos`, survives new games).
@@ -253,7 +254,7 @@ Exposes `window.Juego`. Each portal loads it before its inline script and calls 
 | Portal | File | Notable Differences |
 |--------|------|-------------------|
 | 1 | `plaza-corredera.html` | Most complex (~1893 lines). Has detailed Leaflet map integrated into radar. Most commented code. Uses circular radar with map background. |
-| 2-5 | Various | Standard portals (~660-955 lines). Hexagonal radar design (portals 2-5 use `hex-ring` CSS). |
+| 2-5 | Various | Standard portals (~660-955 lines). Hexagonal radar design (portals 2-5 use `hex-ring` CSS). Portal 2 has 4 questions (the street-map question was removed when the map disappeared). |
 | 6 | `rio-tragantia.html` | Only 4 questions instead of 5. |
 | 7 | `guarida-tragantia.html` | Final portal. Uses TensorFlow.js MobileNet for "portal detection" via camera. Shows global results. Has `html2canvas` for screenshot. Removes `tragantia_progreso` on completion. Uses compact/minified code style. |
 
@@ -303,4 +304,4 @@ Change `CACHE_NAME` and/or `AUDIO_CACHE` version strings in `sw.js`. The old cac
 - **Plaintext answers:** Quiz correct answers visible in source code
 - **No ranking/leaderboard:** Would require a backend (e.g., Firebase)
 - **Offline maps:** Leaflet tiles don't work offline (only GPS + cache works)
-- **Code duplication:** Each portal still duplicates ~500+ lines of core JS (GPS, audio, quiz); new features go into `juego.js` instead
+- **Code duplication:** Each portal still duplicates its core JS (GPS/beeps, camera, narrative typewriter, quiz, success screen, score modal, ~400 lines); the newer shared logic already lives in `juego.js` (see Shared module). New features go into `juego.js`

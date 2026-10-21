@@ -511,136 +511,18 @@
                 { texto: "En la fachada principal del Teatro de la Merced, el escudo de la ciudad de Cazorla muestra un castillo, acompañado por unos báculos pastorales, símbolos de autoridad y guía espiritual. ¿Cuántos báculos pastorales hay en el escudo de la fachada?", opciones: ["2 báculos a la izquierda", "1 báculo en cada lado", "4 báculos en total"], correcta: 1 },
                 { texto: "Entre las piedras de la fachada, yacen varios escudos de la ciudad, grabados en la piedra. ¿Cuántos escudos de Cazorla hay grabados en la fachada principal?", opciones: ["2 escudos", "3 escudos", "5 escudos"], correcta: 1 },
                 { texto: "En uno de los laterales del edificio, el escudo de las Mercedarias de la Caridad luce con orgullo. Las barras verticales que lo adornan guardan un significado religioso profundo. En el escudo de las Mercedarias de la Caridad, ¿cuántas barras verticales hay?", opciones: ["4 barras", "3 barras", "6 barras"], correcta: 0 },
-                { texto: "Cerca del teatro se encuentra la Fuente del Rincón, una joya escondida en medio de la ciudad. Adornada con detalles que evocan tiempos pasados, esta fuente guarda en sus piedras la inscripción de su fecha de nacimiento. ¿Qué año tiene grabado la Fuente del Rincón?", opciones: ["1800", "1900", "1850"], correcta: 1 },
-                { texto: "No muy lejos, un mapa callejero muestra el laberinto urbano de Cazorla. En la cuadrícula 7E se esconde un edificio de gran importancia. En la cuadrícula 7E del callejero de la puerta, ¿qué edificio aparece?", opciones: ["Casa Bicicletas", "Casa Cadenas", "Casa Grande"], correcta: 1 }
+                { texto: "Cerca del teatro se encuentra la Fuente del Rincón, una joya escondida en medio de la ciudad. Adornada con detalles que evocan tiempos pasados, esta fuente guarda en sus piedras la inscripción de su fecha de nacimiento. ¿Qué año tiene grabado la Fuente del Rincón?", opciones: ["1800", "1900", "1850"], correcta: 1 }
             ]
         };
 
         let estado = { visorActivo: false, preguntaActual: 0, watchId: null, intervaloPitido: null, ultimaDistancia: Infinity, narrativoMostrado: false, audioSilenciado: false, narracionActiva: false, textoTerminado: false, audioTerminado: false, puntuacionTotal: 0, tiempoInicioPregunta: 0, respuestasCorrectas: 0, respuestasIncorrectas: 0, bonusTotal: 0, procesandoRespuesta: false };
         let intervaloTimer = null, segundosTranscurridos = 0;
         let mapa = null, marcadorUsuario = null, marcadorDestino = null;
-        let wakeLock = null, distanciaAnterior = null;
         const CLAVE_ESTADO_QUIZ = 'tragantia_portal2_quiz';
 
-        // === VIBRACIÓN HÁPTICA ===
-        function vibrar(patron) { if (navigator.vibrate) { try { navigator.vibrate(patron); } catch (e) {} } }
+        // Funciones comunes a todos los portales (vibrar, wake lock, rumbo, pistas, saltar narración,
+        // guardado y reanudación del quiz): definidas en juego.js
 
-        // === WAKE LOCK: mantener pantalla encendida durante la misión ===
-        async function solicitarWakeLock() {
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
-        }
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                solicitarWakeLock();
-                if (estado.visorActivo) elementos.audioAmbiente.play().catch(() => {});
-            } else {
-                elementos.audioAmbiente.pause();
-                if (elementos.modalQuiz.style.display === 'block' && estado.preguntaActual < CONFIG.preguntas.length) guardarEstadoQuiz();
-            }
-        });
-
-        // === LIMPIEZA DE RECURSOS AL SALIR ===
-        window.addEventListener('pagehide', () => {
-            detenerPitidos();
-            if (estado.watchId !== null) navigator.geolocation.clearWatch(estado.watchId);
-            if (elementos.videoCamara.srcObject) elementos.videoCamara.srcObject.getTracks().forEach(t => t.stop());
-            if (wakeLock) { try { wakeLock.release(); } catch (e) {} }
-        });
-
-        // === RUMBO HACIA EL DESTINO ===
-        function calcularRumbo(lat1, lng1, lat2, lng2) {
-            const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
-            const dl = (lng2 - lng1) * Math.PI / 180;
-            const y = Math.sin(dl) * Math.cos(f2);
-            const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
-            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-        }
-        function actualizarRumbo(lat, lng) {
-            Juego.brujula.fijarRumbo(calcularRumbo(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng), calcularDistancia(lat, lng, CONFIG.destino.lat, CONFIG.destino.lng));
-        }
-        function actualizarTendencia(distancia) {
-            const el = document.getElementById('tendenciaDistancia');
-            if (distanciaAnterior !== null && Math.abs(distancia - distanciaAnterior) > 2) {
-                if (distancia < distanciaAnterior) { el.textContent = '▼ TE ACERCAS'; el.className = 'tendencia-distancia acercando'; }
-                else { el.textContent = '▲ TE ALEJAS'; el.className = 'tendencia-distancia alejando'; }
-            }
-            distanciaAnterior = distancia;
-        }
-
-        // === ANIMACIÓN DE PUNTOS GANADOS/PERDIDOS ===
-        function mostrarDeltaPuntos(texto, color) {
-            const el = document.getElementById('deltaPuntos');
-            el.textContent = texto;
-            el.style.color = color;
-            el.classList.remove('animar');
-            void el.offsetWidth;
-            el.classList.add('animar');
-        }
-
-        // === PISTAS: descontar su coste ===
-        function aplicarCostePista(coste) {
-            if (estado.procesandoRespuesta) return false;
-            if (estado.puntuacionTotal < coste) return 'sin_puntos';
-            estado.puntuacionTotal = Math.max(0, estado.puntuacionTotal - coste);
-            elementos.quizPuntos.textContent = 'Puntos: ' + estado.puntuacionTotal + ' (-' + coste + ' pista)';
-            actualizarPuntosFlotante();
-            mostrarDeltaPuntos('-' + coste, '#f5c842');
-            guardarEstadoQuiz();
-        }
-
-        // === SALTAR LA NARRACIÓN (muestra el texto completo y habilita el sellado) ===
-        function saltarNarracion() {
-            if (!estado.narracionActiva) return;
-            clearInterval(estado.intervaloTexto);
-            elementos.narrativoTexto.textContent = CONFIG.textoNarrativo;
-            elementos.audioNarrativo.pause();
-            estado.textoTerminado = true;
-            estado.audioTerminado = true;
-            verificarFinNarracion();
-        }
-
-        // === REANUDAR DENTRO DEL PORTAL (sin volver a buscar con GPS) ===
-        function reanudarEnPortal(fase) {
-            elementos.audioSusto.play().then(() => elementos.audioSusto.pause()).catch(() => {});
-            solicitarWakeLock();
-            if (fase === 'narrativa') estado.narrativoMostrado = true;
-            activarVisor();
-        }
-
-        // === PERSISTENCIA DEL QUIZ (reanudar si se cierra a mitad) ===
-        function guardarEstadoQuiz() {
-            try {
-                localStorage.setItem(CLAVE_ESTADO_QUIZ, JSON.stringify({
-                    preguntaActual: estado.preguntaActual,
-                    puntuacionTotal: estado.puntuacionTotal,
-                    respuestasCorrectas: estado.respuestasCorrectas,
-                    respuestasIncorrectas: estado.respuestasIncorrectas,
-                    bonusTotal: estado.bonusTotal,
-                    segundos: segundosTranscurridos
-                }));
-            } catch (e) {}
-        }
-        function reanudarQuizGuardado() {
-            let guardado = null;
-            try { guardado = JSON.parse(localStorage.getItem(CLAVE_ESTADO_QUIZ) || 'null'); } catch (e) {}
-            if (!guardado) return;
-            estado.preguntaActual = guardado.preguntaActual || 0;
-            estado.puntuacionTotal = guardado.puntuacionTotal || 0;
-            estado.respuestasCorrectas = guardado.respuestasCorrectas || 0;
-            estado.respuestasIncorrectas = guardado.respuestasIncorrectas || 0;
-            estado.bonusTotal = guardado.bonusTotal || 0;
-            segundosTranscurridos = guardado.segundos || 0;
-            document.getElementById('avisoReanudar').style.display = 'none';
-            elementos.pantallaRadar.style.display = 'none';
-            elementos.modalQuiz.style.display = 'block';
-            actualizarDisplayTimer();
-            if (intervaloTimer) clearInterval(intervaloTimer);
-            intervaloTimer = setInterval(() => { segundosTranscurridos++; actualizarDisplayTimer(); if (segundosTranscurridos % 5 === 0) guardarEstadoQuiz(); }, 1000);
-            actualizarPuntosFlotante();
-            solicitarWakeLock();
-            if (estado.preguntaActual >= CONFIG.preguntas.length) { clearInterval(intervaloTimer); mostrarExito(); return; }
-            cargarPregunta();
-        }
         
         // Cargar puntos de portales anteriores
         const puntosAnteriores = parseInt(localStorage.getItem('tragantia_puntos') || '0');
